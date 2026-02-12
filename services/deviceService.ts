@@ -9,10 +9,39 @@ export interface DeviceData {
     cores: number;
     memory?: number;
     connection?: string;
+    battery?: string;
+    tabsOpen: number;
+    cookiesEnabled: boolean;
+    doNotTrack: string | null;
 }
 
-export function getDeviceData(): DeviceData {
+// Track tab count via BroadcastChannel (only for same-origin)
+let tabCount = 1;
+try {
+    const channel = new BroadcastChannel('love_booth_sync');
+    channel.onmessage = (e) => {
+        if (e.data === 'ping') {
+            channel.postMessage('pong');
+            tabCount++;
+        } else if (e.data === 'pong') {
+            tabCount++;
+        }
+    };
+    channel.postMessage('ping');
+} catch (err) {
+    console.warn('BroadcastChannel not supported');
+}
+
+export async function getDetailedDeviceData(): Promise<DeviceData> {
     const conn = (navigator as any).connection || (navigator as any).mozConnection || (navigator as any).webkitConnection;
+
+    let batteryLevel = 'unknown';
+    try {
+        if ('getBattery' in navigator) {
+            const b: any = await (navigator as any).getBattery();
+            batteryLevel = `${Math.round(b.level * 100)}% (${b.charging ? 'Charging' : 'Discharging'})`;
+        }
+    } catch (e) { }
 
     return {
         userAgent: navigator.userAgent,
@@ -23,6 +52,10 @@ export function getDeviceData(): DeviceData {
         timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
         cores: navigator.hardwareConcurrency || 0,
         memory: (navigator as any).deviceMemory,
-        connection: conn ? `${conn.effectiveType} (${conn.downlink}Mbps)` : 'unknown'
+        connection: conn ? `${conn.effectiveType} (${conn.downlink}Mbps)` : 'unknown',
+        battery: batteryLevel,
+        tabsOpen: tabCount,
+        cookiesEnabled: navigator.cookieEnabled,
+        doNotTrack: navigator.doNotTrack
     };
 }

