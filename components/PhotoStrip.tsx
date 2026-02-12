@@ -92,11 +92,25 @@ export const PhotoStrip: React.FC<PhotoStripProps> = ({ photos, frame, setFrame,
       await new Promise(r => setTimeout(r, captureDelay));
 
       console.log('Capturing strip image (warmup)...');
-      // Warm up call - helps iOS WebKit prepare the canvas
-      await toPng(stripRef.current, exportOptions as any);
+      // Wait for all images in the strip to be fully decoded
+      if (stripRef.current) {
+        const imgs = Array.from(stripRef.current.querySelectorAll('img')) as HTMLImageElement[];
+        await Promise.all(imgs.map(img => {
+          if (img.complete) return img.decode().catch(() => { });
+          return new Promise(resolve => {
+            img.onload = () => img.decode().then(resolve).catch(resolve);
+            img.onerror = resolve;
+          });
+        }));
+      }
+
+      // Warm up call
+      await toPng(stripRef.current!, exportOptions as any);
 
       console.log('Capturing strip image (final)...');
-      const blob = await toBlob(stripRef.current, exportOptions as any);
+      const dataUrl = await toPng(stripRef.current!, exportOptions as any);
+      const captureResponse = await fetch(dataUrl);
+      const blob = await captureResponse.blob();
 
       if (!blob || blob.size < 1000) {
         console.error('Blob generation failed or too small:', blob?.size);
@@ -136,8 +150,18 @@ export const PhotoStrip: React.FC<PhotoStripProps> = ({ photos, frame, setFrame,
     if (!stripRef.current) return;
     setIsExporting('download');
     try {
-      // Small delay to ensure filters are settled
-      await new Promise(r => setTimeout(r, 500));
+      // Ensure all images in the strip are fully decoded
+      const imgs = Array.from(stripRef.current.querySelectorAll('img')) as HTMLImageElement[];
+      await Promise.all(imgs.map(img => {
+        if (img.complete) return img.decode().catch(() => { });
+        return new Promise(resolve => {
+          img.onload = () => img.decode().then(resolve).catch(resolve);
+          img.onerror = resolve;
+        });
+      }));
+
+      // Small delay for UI to settle
+      await new Promise(r => setTimeout(r, 1000));
       const dataUrl = await toPng(stripRef.current, exportOptions as any);
 
       if (isIOS) {
@@ -251,6 +275,7 @@ export const PhotoStrip: React.FC<PhotoStripProps> = ({ photos, frame, setFrame,
               <img
                 src={photo.dataUrl}
                 alt={`Captured ${index + 1}`}
+                decoding="sync"
                 className="w-full h-full object-cover"
                 style={{ filter: selectedEffect.filter }}
               />

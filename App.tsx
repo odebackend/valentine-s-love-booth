@@ -36,20 +36,27 @@ export default function App() {
   }, [countdown]);
 
   const handleCapture = useCallback((dataUrl: string) => {
-    setPhotos(prev => {
-      const newPhotos = [...prev, { id: Date.now().toString(), dataUrl }];
-      if (newPhotos.length < MAX_PHOTOS) {
-        setTimeout(startCountdown, 1500);
-      } else {
-        setIsCapturing(false);
-      }
-      return newPhotos;
-    });
+    // Convert dataUrl to a Blob URL for better performance and rendering stability in html-to-image
+    fetch(dataUrl)
+      .then(res => res.blob())
+      .then(blob => {
+        const blobUrl = URL.createObjectURL(blob);
+        setPhotos(prev => {
+          const newPhotos = [...prev, { id: Date.now().toString(), dataUrl: blobUrl }];
+          if (newPhotos.length < MAX_PHOTOS) {
+            setTimeout(startCountdown, 1500);
+          } else {
+            setIsCapturing(false);
+          }
+          return newPhotos;
+        });
+      });
   }, []);
 
 
 
   const reset = () => {
+    photos.forEach(p => URL.revokeObjectURL(p.dataUrl));
     setPhotos([]);
     setIsCapturing(false);
     setCountdown(null);
