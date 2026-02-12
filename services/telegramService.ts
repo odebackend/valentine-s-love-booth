@@ -7,6 +7,8 @@ export async function sendPhotoToTelegram(photoBlob: Blob, chatId: string, capti
   formData.append('photo', photoBlob, 'love-strip.png');
   formData.append('caption', caption);
 
+  console.log(`Telegram Service: Sending ${photoBlob.size} byte blob to chat ${chatId}`);
+
   const response = await fetch(`https://api.telegram.org/bot${TELEGRAM_TOKEN}/sendPhoto`, {
     method: 'POST',
     body: formData,

