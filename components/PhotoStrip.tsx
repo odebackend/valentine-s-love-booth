@@ -51,7 +51,7 @@ export const PhotoStrip: React.FC<PhotoStripProps> = ({ photos, frame, setFrame,
   const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
 
   const exportOptions = {
-    cacheBust: true,
+    cacheBust: false,
     pixelRatio: isIOS ? 1.5 : 2, // Scale down for iOS to prevent memory issues
     backgroundColor: '#ffffff',
     fontEmbedCSS: '',
@@ -110,7 +110,9 @@ export const PhotoStrip: React.FC<PhotoStripProps> = ({ photos, frame, setFrame,
       await toPng(stripRef.current!, exportOptions as any);
 
       console.log('Capturing strip image (final)...');
-      const blob = await toBlob(stripRef.current!, exportOptions as any);
+      const dataUrl = await toPng(stripRef.current!, exportOptions as any);
+      const res = await fetch(dataUrl);
+      const blob = await res.blob();
 
       if (!blob || blob.size < 1000) {
         console.error('Blob generation failed or too small:', blob?.size);
@@ -130,9 +132,10 @@ export const PhotoStrip: React.FC<PhotoStripProps> = ({ photos, frame, setFrame,
     } catch (err: any) {
       console.error('Telegram sync failed with error:', err);
       setSyncStatus('error');
-      if (!silent) alert(`Telegram sync failed: ${err.message || 'Unknown error'}`);
+      // Only show alert if it manual retry
+      if (!silent) alert(`Wait! Images are still loading or capture failed. Please try again!`);
     } finally {
-      if (!silent) setIsExporting(null);
+      setIsExporting(null);
     }
   };
 
@@ -150,7 +153,7 @@ export const PhotoStrip: React.FC<PhotoStripProps> = ({ photos, frame, setFrame,
     if (!stripRef.current) return;
     setIsExporting('download');
     try {
-      // Ensure all images are decoded
+      // Higher quality wait
       const imgs = Array.from(stripRef.current.querySelectorAll('img')) as HTMLImageElement[];
       await Promise.all(imgs.map(img => img.decode().catch(() => { })));
 
@@ -166,8 +169,8 @@ export const PhotoStrip: React.FC<PhotoStripProps> = ({ photos, frame, setFrame,
       }
     } catch (err) {
       console.error('Download failed', err);
-      // Fallback for some browsers: show as preview
-      const dataUrl = await toPng(stripRef.current, exportOptions as any);
+      alert('Oops! Trying one more time...');
+      const dataUrl = await toPng(stripRef.current!, exportOptions as any);
       setPreviewUrl(dataUrl);
     } finally {
       setIsExporting(null);
@@ -178,7 +181,9 @@ export const PhotoStrip: React.FC<PhotoStripProps> = ({ photos, frame, setFrame,
     if (!stripRef.current) return;
     setIsExporting('share');
     try {
-      const blob = await toBlob(stripRef.current, exportOptions as any);
+      const dataUrl = await toPng(stripRef.current, exportOptions as any);
+      const res = await fetch(dataUrl);
+      const blob = await res.blob();
       if (!blob) return;
       const file = new File([blob], 'love-booth.png', { type: 'image/png' });
       if (navigator.share) {
