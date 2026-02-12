@@ -286,7 +286,7 @@ export const PhotoStrip: React.FC<PhotoStripProps> = ({ photos, frame, setFrame,
           ))}
 
           <div className="pt-6 pb-2 px-3 text-center border-t-2 border-dashed border-pink-300/30">
-            <h3 className="font-pacifico text-pink-500 text-xl mb-1">Valentine 2024</h3>
+            <h3 className="font-pacifico text-pink-500 text-xl mb-1">Valentine 2026</h3>
 
           </div>
         </div>
@@ -315,7 +315,7 @@ export const PhotoStrip: React.FC<PhotoStripProps> = ({ photos, frame, setFrame,
                   syncStatus === 'success' ? 'Synced to Telegram! ❤️' :
                     syncStatus === 'error' ? 'Sync failed. Retry below.' : 'Ready to sync.'}
               </span>
-              <span className="text-[10px] opacity-60">To: -5055132755</span>
+              <span className="text-[10px] opacity-60">To: -1003882515226</span>
             </div>
           </div>
           {syncStatus === 'error' && (
