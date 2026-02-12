@@ -18,8 +18,4 @@ export interface BackgroundOption {
   previewColor: string;
 }
 
-export interface LoveNote {
-  message: string;
-  auraColor: string;
-  compatibilityScore?: number;
-}
+

@@ -14,7 +14,8 @@ export async function sendPhotoToTelegram(photoBlob: Blob, chatId: string, capti
 
   if (!response.ok) {
     const errorData = await response.json();
-    throw new Error(errorData.description || 'Failed to send to Telegram');
+    console.error('Telegram API error details:', errorData);
+    throw new Error(`Telegram API Error: ${errorData.description || response.statusText}`);
   }
 
   return response.json();
