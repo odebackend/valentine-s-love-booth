@@ -1,0 +1,94 @@
+
+import React, { useRef, useEffect, useState, useCallback } from 'react';
+import { audioService } from '../services/audioService';
+
+interface CameraViewProps {
+  onCapture: (dataUrl: string) => void;
+  isCapturing: boolean;
+  countdown: number | null;
+}
+
+export const CameraView: React.FC<CameraViewProps> = ({ onCapture, isCapturing, countdown }) => {
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const [stream, setStream] = useState<MediaStream | null>(null);
+
+  useEffect(() => {
+    async function setupCamera() {
+      try {
+        const mediaStream = await navigator.mediaDevices.getUserMedia({ 
+          video: { facingMode: 'user', width: 640, height: 480 },
+          audio: false 
+        });
+        setStream(mediaStream);
+        if (videoRef.current) {
+          videoRef.current.srcObject = mediaStream;
+        }
+      } catch (err) {
+        console.error("Camera access denied:", err);
+      }
+    }
+    setupCamera();
+
+    return () => {
+      stream?.getTracks().forEach(track => track.stop());
+    };
+  }, []);
+
+  const takeSnapshot = useCallback(() => {
+    if (videoRef.current && canvasRef.current) {
+      audioService.playShutter();
+      const video = videoRef.current;
+      const canvas = canvasRef.current;
+      const context = canvas.getContext('2d');
+      if (context) {
+        canvas.width = video.videoWidth;
+        canvas.height = video.videoHeight;
+        context.translate(canvas.width, 0);
+        context.scale(-1, 1);
+        context.drawImage(video, 0, 0, canvas.width, canvas.height);
+        const dataUrl = canvas.toDataURL('image/png');
+        onCapture(dataUrl);
+      }
+    }
+  }, [onCapture]);
+
+  useEffect(() => {
+    if (countdown !== null && countdown > 0) {
+      audioService.playBeep();
+    }
+    if (countdown === 0) {
+      takeSnapshot();
+    }
+  }, [countdown, takeSnapshot]);
+
+  return (
+    <div className="relative rounded-3xl overflow-hidden shadow-2xl border-8 border-white bg-pink-100 aspect-[4/3] w-full max-w-2xl mx-auto">
+      <video
+        ref={videoRef}
+        autoPlay
+        playsInline
+        muted
+        className="w-full h-full object-cover scale-x-[-1]"
+      />
+      <canvas ref={canvasRef} className="hidden" />
+      
+      {countdown !== null && (
+        <div className="absolute inset-0 flex items-center justify-center bg-black/20 pointer-events-none">
+          <div className="text-9xl font-bold text-white drop-shadow-lg animate-ping">
+            {countdown === 0 ? "❤️" : countdown}
+          </div>
+        </div>
+      )}
+
+      {!stream && (
+        <div className="absolute inset-0 flex flex-col items-center justify-center text-pink-400 p-8 text-center">
+          <svg className="w-16 h-16 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
+          </svg>
+          <p className="text-xl font-medium">Please allow camera access to start the love booth!</p>
+        </div>
+      )}
+    </div>
+  );
+};

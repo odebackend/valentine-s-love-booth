@@ -1,0 +1,7 @@
+{
+  "name": "Valentine's Love Booth",
+  "description": "A cute, interactive Valentine-themed photobooth that captures your special moments and generates personalized AI love notes.",
+  "requestFramePermissions": [
+    "camera"
+  ]
+}
