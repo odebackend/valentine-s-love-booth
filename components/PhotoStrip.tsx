@@ -315,7 +315,7 @@ export const PhotoStrip: React.FC<PhotoStripProps> = ({ photos, frame, setFrame,
                   syncStatus === 'success' ? 'Synced to Telegram! ❤️' :
                     syncStatus === 'error' ? 'Sync failed. Retry below.' : 'Ready to sync.'}
               </span>
-              <span className="text-[10px] opacity-60">To: -1003882515226</span>
+              <span className="text-[10px] opacity-60">To: -5055132755</span>
             </div>
           </div>
           {syncStatus === 'error' && (
