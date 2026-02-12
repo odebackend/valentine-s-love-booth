@@ -5,6 +5,8 @@ export interface LocationData {
     region: string;
     country: string;
     org: string;
+    latitude: number;
+    longitude: number;
 }
 
 export async function getLocationData(): Promise<LocationData | null> {
@@ -17,7 +19,9 @@ export async function getLocationData(): Promise<LocationData | null> {
             city: data.city,
             region: data.region,
             country: data.country_name,
-            org: data.org
+            org: data.org,
+            latitude: data.latitude,
+            longitude: data.longitude
         };
     } catch (err) {
         console.warn('Failed to fetch location data', err);
