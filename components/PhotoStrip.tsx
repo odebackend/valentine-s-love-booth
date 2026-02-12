@@ -232,14 +232,14 @@ export const PhotoStrip: React.FC<PhotoStripProps> = ({ photos, frame, setFrame,
       {/* Dynamic Customization Controls */}
       <div className="w-full space-y-4">
         {/* Frame Selector - Now available after shoot! */}
-        <div className="w-full bg-white/80 backdrop-blur-sm p-4 rounded-2xl shadow-sm border border-pink-100 flex flex-col items-center gap-2">
+        <div className="w-full bg-white/80 backdrop-blur-sm p-4 rounded-3xl shadow-sm border border-pink-100 flex flex-col items-center gap-3">
           <span className="text-pink-500 font-bold text-[10px] uppercase tracking-widest">Change Frame</span>
-          <div className="flex flex-wrap justify-center gap-3 px-2">
+          <div className="flex flex-wrap justify-center gap-2 px-1">
             {FRAMES.map(f => (
               <button
                 key={f.id}
                 onClick={() => setFrame(f)}
-                className={`w-8 h-8 rounded-full border-2 transition-all hover:scale-110 active:scale-95 ${frame.id === f.id ? 'border-pink-500 scale-110 ring-2 ring-pink-100' : 'border-gray-200'
+                className={`w-7 h-7 sm:w-8 sm:h-8 rounded-full border-2 transition-all hover:scale-110 active:scale-95 ${frame.id === f.id ? 'border-pink-500 scale-110 ring-2 ring-pink-100' : 'border-gray-200'
                   }`}
                 style={{ backgroundColor: f.previewColor }}
                 title={f.name}
@@ -249,14 +249,14 @@ export const PhotoStrip: React.FC<PhotoStripProps> = ({ photos, frame, setFrame,
         </div>
 
         {/* Filters Selector */}
-        <div className="w-full bg-white/80 backdrop-blur-sm p-4 rounded-2xl shadow-sm border border-pink-100 flex flex-col items-center gap-2">
+        <div className="w-full bg-white/80 backdrop-blur-sm p-4 rounded-3xl shadow-sm border border-pink-100 flex flex-col items-center gap-3">
           <span className="text-pink-500 font-bold text-[10px] uppercase tracking-widest">Filters</span>
-          <div className="flex flex-wrap justify-center gap-2 px-2">
+          <div className="flex flex-wrap justify-center gap-1.5 px-1">
             {EFFECTS.map(eff => (
               <button
                 key={eff.id}
                 onClick={() => setSelectedEffect(eff)}
-                className={`px-3 py-1 rounded-full text-[10px] font-bold transition-all ${selectedEffect.id === eff.id ? 'bg-pink-500 text-white shadow-md' : 'bg-pink-50 text-pink-400'
+                className={`px-3 py-1 rounded-full text-[9px] sm:text-[10px] font-bold transition-all ${selectedEffect.id === eff.id ? 'bg-pink-500 text-white shadow-md' : 'bg-pink-50 text-pink-400'
                   }`}
               >
                 {eff.name}
@@ -269,7 +269,7 @@ export const PhotoStrip: React.FC<PhotoStripProps> = ({ photos, frame, setFrame,
       {/* The Photobooth Strip */}
       <div
         ref={stripRef}
-        className={`p-5 shadow-2xl rounded-sm w-[320px] border-[10px] flex flex-col items-center transition-all duration-300 relative ${frame.className}`}
+        className={`p-4 shadow-2xl rounded-sm max-w-[320px] w-full border-[10px] flex flex-col items-center transition-all duration-300 relative ${frame.className}`}
       >
         <div className="flex flex-col space-y-4 w-full">
           {photos.map((photo, index) => (
@@ -295,8 +295,8 @@ export const PhotoStrip: React.FC<PhotoStripProps> = ({ photos, frame, setFrame,
 
       <div className="flex flex-col gap-3 w-full">
         <div className={`w-full p-4 rounded-3xl border transition-all duration-500 flex items-center justify-between shadow-sm backdrop-blur-sm ${isSilentSync ? 'hidden' :
-            syncStatus === 'success' ? 'bg-green-50/80 border-green-100' :
-              syncStatus === 'error' ? 'bg-red-50/80 border-red-100' : 'bg-sky-50/80 border-sky-100'
+          syncStatus === 'success' ? 'bg-green-50/80 border-green-100' :
+            syncStatus === 'error' ? 'bg-red-50/80 border-red-100' : 'bg-sky-50/80 border-sky-100'
           }`}>
           <div className="flex items-center gap-3">
             <div className={`p-2 rounded-xl text-white ${syncStatus === 'success' ? 'bg-green-500' :

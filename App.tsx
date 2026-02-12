@@ -76,11 +76,11 @@ export default function App() {
       )}
 
       <div className="max-w-4xl mx-auto relative z-10">
-        <header className="text-center mb-10">
-          <h1 className={`text-5xl md:text-7xl font-pacifico drop-shadow-sm mb-4 transition-colors duration-500 ${isDarkBg ? 'text-pink-300' : 'text-pink-500'}`}>
+        <header className="text-center mb-6 md:mb-10">
+          <h1 className={`text-4xl sm:text-5xl md:text-7xl font-pacifico drop-shadow-sm mb-2 md:mb-4 transition-colors duration-500 ${isDarkBg ? 'text-pink-300' : 'text-pink-500'}`}>
             Love Booth
           </h1>
-          <p className={`font-medium tracking-wide flex items-center justify-center gap-2 transition-colors duration-500 ${isDarkBg ? 'text-pink-200' : 'text-pink-400'}`}>
+          <p className={`font-bold text-[10px] sm:text-xs md:text-sm tracking-[0.2em] flex items-center justify-center gap-2 transition-colors duration-500 ${isDarkBg ? 'text-pink-200' : 'text-pink-400'}`}>
             <span>CAPTURE YOUR VALENTINE MEMORIES</span>
             <span className="text-pink-300">{HEART_ICON}</span>
           </p>
@@ -99,14 +99,14 @@ export default function App() {
                 {!isCapturing && (
                   <div className="w-full flex flex-col md:flex-row gap-4 relative">
                     {/* Background Selection */}
-                    <div className="flex-1 bg-white/90 backdrop-blur-sm p-5 rounded-3xl shadow-lg flex flex-col items-center gap-3 border border-pink-100 h-fit">
-                      <h3 className="text-pink-500 font-bold text-xs uppercase tracking-widest">Background</h3>
-                      <div className="flex flex-wrap justify-center gap-3">
+                    <div className="flex-1 bg-white/90 backdrop-blur-sm p-4 sm:p-5 rounded-3xl shadow-lg flex flex-col items-center gap-3 border border-pink-100 h-fit">
+                      <h3 className="text-pink-500 font-bold text-[10px] uppercase tracking-widest">Background</h3>
+                      <div className="flex flex-wrap justify-center gap-2.5">
                         {BACKGROUNDS.map(bg => (
                           <button
                             key={bg.id}
                             onClick={() => setSelectedBg(bg)}
-                            className={`w-10 h-10 rounded-full border-2 transition-all hover:scale-110 active:scale-95 ${selectedBg.id === bg.id ? 'border-pink-500 scale-110 ring-2 ring-pink-100' : 'border-gray-200'
+                            className={`w-8 h-8 sm:w-10 sm:h-10 rounded-full border-2 transition-all hover:scale-110 active:scale-95 ${selectedBg.id === bg.id ? 'border-pink-500 scale-110 ring-2 ring-pink-100' : 'border-gray-200'
                               }`}
                             style={{ backgroundColor: bg.previewColor }}
                             title={bg.name}
@@ -133,14 +133,14 @@ export default function App() {
                         </div>
                       )}
 
-                      <div className="flex flex-wrap justify-center gap-3">
+                      <div className="flex flex-wrap justify-center gap-2.5">
                         {FRAMES.map(f => (
                           <button
                             key={f.id}
                             onMouseEnter={() => setHoveredFrame(f)}
                             onMouseLeave={() => setHoveredFrame(null)}
                             onClick={() => setSelectedFrame(f)}
-                            className={`w-10 h-10 rounded-full border-2 transition-all hover:scale-110 active:scale-95 ${selectedFrame.id === f.id ? 'border-pink-500 scale-110 ring-2 ring-pink-100' : 'border-gray-200'
+                            className={`w-8 h-8 sm:w-10 sm:h-10 rounded-full border-2 transition-all hover:scale-110 active:scale-95 ${selectedFrame.id === f.id ? 'border-pink-500 scale-110 ring-2 ring-pink-100' : 'border-gray-200'
                               }`}
                             style={{ backgroundColor: f.previewColor }}
                             title={f.name}
