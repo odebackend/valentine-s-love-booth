@@ -14,9 +14,11 @@ export const CameraView: React.FC<CameraViewProps> = ({ onCapture, isCapturing, 
   const [stream, setStream] = useState<MediaStream | null>(null);
 
   useEffect(() => {
+    let mounted = true;
+
     async function setupCamera() {
       try {
-        // More flexible constraints for better device support (fixes ASUS/Laptop issues)
+        // Flexible constraints for broad compatibility (ASUS, Mac, Mobile)
         const mediaStream = await navigator.mediaDevices.getUserMedia({
           video: {
             facingMode: 'user',
@@ -25,29 +27,40 @@ export const CameraView: React.FC<CameraViewProps> = ({ onCapture, isCapturing, 
           },
           audio: false
         }).catch(() => {
-          // Fallback to basic if ideal fails
-          return navigator.mediaDevices.getUserMedia({
-            video: true,
-            audio: false
-          });
+          // Fallback to basic video if ideal fails
+          return navigator.mediaDevices.getUserMedia({ video: true, audio: false });
         });
 
-        setStream(mediaStream);
-        if (videoRef.current) {
-          videoRef.current.srcObject = mediaStream;
+        if (mounted) {
+          setStream(mediaStream);
+          if (videoRef.current) {
+            videoRef.current.srcObject = mediaStream;
+          }
+        } else {
+          mediaStream.getTracks().forEach(track => track.stop());
         }
       } catch (err) {
         console.error("Camera access denied or hardware error:", err);
       }
     }
+
     setupCamera();
 
     return () => {
+      mounted = false;
+      // Clean up stream on unmount
       if (stream) {
         stream.getTracks().forEach(track => track.stop());
       }
     };
   }, []);
+
+  // Effect to handle current stream update to video element
+  useEffect(() => {
+    if (stream && videoRef.current) {
+      videoRef.current.srcObject = stream;
+    }
+  }, [stream]);
 
   const takeSnapshot = useCallback(() => {
     if (videoRef.current && canvasRef.current) {
@@ -56,13 +69,13 @@ export const CameraView: React.FC<CameraViewProps> = ({ onCapture, isCapturing, 
       const canvas = canvasRef.current;
       const context = canvas.getContext('2d');
       if (context) {
-        // Use actual video dimensions
+        // Use actual video dimensions for high quality
         canvas.width = video.videoWidth;
         canvas.height = video.videoHeight;
         context.translate(canvas.width, 0);
         context.scale(-1, 1);
         context.drawImage(video, 0, 0, canvas.width, canvas.height);
-        const dataUrl = canvas.toDataURL('image/png');
+        const dataUrl = canvas.toDataURL('image/png', 0.9);
         onCapture(dataUrl);
       }
     }

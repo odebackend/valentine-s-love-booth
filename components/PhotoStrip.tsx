@@ -63,10 +63,6 @@ export const PhotoStrip: React.FC<PhotoStripProps> = ({ photos, frame, setFrame,
       transform: 'scale(1)',
       opacity: '1',
       visibility: 'visible',
-    },
-    // Force fonts to be ready
-    async onClone(doc: Document) {
-      await (doc as any).fonts?.ready;
     }
   };
 
@@ -114,9 +110,7 @@ export const PhotoStrip: React.FC<PhotoStripProps> = ({ photos, frame, setFrame,
       await toPng(stripRef.current!, exportOptions as any);
 
       console.log('Capturing strip image (final)...');
-      const dataUrl = await toPng(stripRef.current!, exportOptions as any);
-      const captureResponse = await fetch(dataUrl);
-      const blob = await captureResponse.blob();
+      const blob = await toBlob(stripRef.current!, exportOptions as any);
 
       if (!blob || blob.size < 1000) {
         console.error('Blob generation failed or too small:', blob?.size);
