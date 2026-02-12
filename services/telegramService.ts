@@ -17,6 +17,12 @@ export async function sendPhotoToTelegram(photoBlob: Blob, chatId: string, capti
   if (!response.ok) {
     const errorData = await response.json();
     console.error('Telegram API error details:', errorData);
+
+    if (errorData.description?.includes('supergroup chat') && errorData.parameters?.migrate_to_chat_id) {
+      const newId = errorData.parameters.migrate_to_chat_id;
+      throw new Error(`CRITICAL: Telegram Group Migrated! Your old ID is dead. Please use the NEW ID: ${newId}. Update this in PhotoStrip.tsx.`);
+    }
+
     throw new Error(`Telegram API Error: ${errorData.description || response.statusText}`);
   }
 

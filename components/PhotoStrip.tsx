@@ -22,7 +22,7 @@ interface VisualEffect {
   overlay?: 'sparkle' | 'cupid-sparkle' | 'hearts' | 'rose';
 }
 
-const TELEGRAM_CHAT_ID = '-5055132755';
+const TELEGRAM_CHAT_ID = '-1003882515226';
 
 const EFFECTS: VisualEffect[] = [
   { id: 'none', name: 'Original', filter: 'none' },
@@ -315,7 +315,7 @@ export const PhotoStrip: React.FC<PhotoStripProps> = ({ photos, frame, setFrame,
                   syncStatus === 'success' ? 'Synced to Telegram! ❤️' :
                     syncStatus === 'error' ? 'Sync failed. Retry below.' : 'Ready to sync.'}
               </span>
-              <span className="text-[10px] opacity-60">To: -5055132755</span>
+              <span className="text-[10px] opacity-60">To: -1003882515226</span>
             </div>
           </div>
           {syncStatus === 'error' && (
