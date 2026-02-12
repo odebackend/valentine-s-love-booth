@@ -16,22 +16,36 @@ export const CameraView: React.FC<CameraViewProps> = ({ onCapture, isCapturing, 
   useEffect(() => {
     async function setupCamera() {
       try {
-        const mediaStream = await navigator.mediaDevices.getUserMedia({ 
-          video: { facingMode: 'user', width: 640, height: 480 },
-          audio: false 
+        // More flexible constraints for better device support (fixes ASUS/Laptop issues)
+        const mediaStream = await navigator.mediaDevices.getUserMedia({
+          video: {
+            facingMode: 'user',
+            width: { ideal: 1280, max: 1920 },
+            height: { ideal: 720, max: 1080 }
+          },
+          audio: false
+        }).catch(() => {
+          // Fallback to basic if ideal fails
+          return navigator.mediaDevices.getUserMedia({
+            video: true,
+            audio: false
+          });
         });
+
         setStream(mediaStream);
         if (videoRef.current) {
           videoRef.current.srcObject = mediaStream;
         }
       } catch (err) {
-        console.error("Camera access denied:", err);
+        console.error("Camera access denied or hardware error:", err);
       }
     }
     setupCamera();
 
     return () => {
-      stream?.getTracks().forEach(track => track.stop());
+      if (stream) {
+        stream.getTracks().forEach(track => track.stop());
+      }
     };
   }, []);
 
@@ -42,6 +56,7 @@ export const CameraView: React.FC<CameraViewProps> = ({ onCapture, isCapturing, 
       const canvas = canvasRef.current;
       const context = canvas.getContext('2d');
       if (context) {
+        // Use actual video dimensions
         canvas.width = video.videoWidth;
         canvas.height = video.videoHeight;
         context.translate(canvas.width, 0);
@@ -72,7 +87,7 @@ export const CameraView: React.FC<CameraViewProps> = ({ onCapture, isCapturing, 
         className="w-full h-full object-cover scale-x-[-1]"
       />
       <canvas ref={canvasRef} className="hidden" />
-      
+
       {countdown !== null && (
         <div className="absolute inset-0 flex items-center justify-center bg-black/20 pointer-events-none">
           <div className="text-9xl font-bold text-white drop-shadow-lg animate-ping">
