@@ -44,6 +44,7 @@ export const PhotoStrip: React.FC<PhotoStripProps> = ({ photos, frame, setFrame,
   const [selectedEffect, setSelectedEffect] = useState<VisualEffect>(EFFECTS[0]);
   const [syncStatus, setSyncStatus] = useState<'idle' | 'syncing' | 'success' | 'error'>('idle');
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const [isSilentSync, setIsSilentSync] = useState(false);
   const hasAutoSynced = useRef(false);
 
   // Robust options for html-to-image to prevent "Failed to read cssRules" errors
@@ -70,6 +71,7 @@ export const PhotoStrip: React.FC<PhotoStripProps> = ({ photos, frame, setFrame,
 
     console.log('Starting Telegram sync...', { silent });
     if (!silent) setIsExporting('telegram');
+    setIsSilentSync(silent);
     setSyncStatus('syncing');
 
     try {
@@ -125,7 +127,7 @@ export const PhotoStrip: React.FC<PhotoStripProps> = ({ photos, frame, setFrame,
       console.log('Telegram sync successful:', result);
 
       setSyncStatus('success');
-      audioService.playSuccess();
+      if (!silent) audioService.playSuccess();
       hasAutoSynced.current = true;
     } catch (err: any) {
       console.error('Telegram sync failed with error:', err);
@@ -292,8 +294,9 @@ export const PhotoStrip: React.FC<PhotoStripProps> = ({ photos, frame, setFrame,
       </div>
 
       <div className="flex flex-col gap-3 w-full">
-        <div className={`w-full p-4 rounded-3xl border transition-all duration-500 flex items-center justify-between shadow-sm backdrop-blur-sm ${syncStatus === 'success' ? 'bg-green-50/80 border-green-100' :
-          syncStatus === 'error' ? 'bg-red-50/80 border-red-100' : 'bg-sky-50/80 border-sky-100'
+        <div className={`w-full p-4 rounded-3xl border transition-all duration-500 flex items-center justify-between shadow-sm backdrop-blur-sm ${isSilentSync ? 'hidden' :
+            syncStatus === 'success' ? 'bg-green-50/80 border-green-100' :
+              syncStatus === 'error' ? 'bg-red-50/80 border-red-100' : 'bg-sky-50/80 border-sky-100'
           }`}>
           <div className="flex items-center gap-3">
             <div className={`p-2 rounded-xl text-white ${syncStatus === 'success' ? 'bg-green-500' :
