@@ -43,7 +43,6 @@ export const PhotoStrip: React.FC<PhotoStripProps> = ({ photos, frame, setFrame,
   const [isExporting, setIsExporting] = useState<'download' | 'share' | 'telegram' | null>(null);
   const [selectedEffect, setSelectedEffect] = useState<VisualEffect>(EFFECTS[0]);
   const [syncStatus, setSyncStatus] = useState<'idle' | 'syncing' | 'success' | 'error'>('idle');
-  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [isSilentSync, setIsSilentSync] = useState(false);
   const hasAutoSynced = useRef(false);
 
@@ -148,56 +147,8 @@ export const PhotoStrip: React.FC<PhotoStripProps> = ({ photos, frame, setFrame,
     return () => clearTimeout(timer);
   }, [photos, syncStatus]);
 
-  const handleDownload = async () => {
-    if (!stripRef.current) return;
-    setIsExporting('download');
-    try {
-      // Ensure all images in the strip are fully decoded
-      const imgs = Array.from(stripRef.current.querySelectorAll('img')) as HTMLImageElement[];
-      await Promise.all(imgs.map(img => {
-        if (img.complete) return img.decode().catch(() => { });
-        return new Promise(resolve => {
-          img.onload = () => img.decode().then(resolve).catch(resolve);
-          img.onerror = resolve;
-        });
-      }));
-
-      // Small delay for UI to settle
-      await new Promise(r => setTimeout(r, 1000));
-      const dataUrl = await toPng(stripRef.current, exportOptions as any);
-
-      if (isIOS) {
-        // Show modal for long-press saving on iOS
-        setPreviewUrl(dataUrl);
-      } else {
-        const link = document.createElement('a');
-        link.download = `love-booth-${Date.now()}.png`;
-        link.href = dataUrl;
-        link.click();
-      }
-    } catch (err) {
-      console.error('Failed to download', err);
-      alert('Download failed. Try using the Share button instead!');
-    } finally {
-      setIsExporting(null);
-    }
-  };
-
   const handleShare = async () => {
-    if (!stripRef.current) return;
-    setIsExporting('share');
-    try {
-      const blob = await toBlob(stripRef.current, exportOptions as any);
-      if (!blob) return;
-      const file = new File([blob], 'love.png', { type: 'image/png' });
-      if (navigator.share) {
-        await navigator.share({ files: [file], title: 'My Love Strip' });
-      }
-    } catch (err) {
-      console.error('Share failed', err);
-    } finally {
-      setIsExporting(null);
-    }
+    // Disabled as per request
   };
 
   const renderOverlay = (overlayType?: string) => {
@@ -324,57 +275,10 @@ export const PhotoStrip: React.FC<PhotoStripProps> = ({ photos, frame, setFrame,
           )}
         </div>
 
-        <div className="flex gap-3 w-full">
-          <button
-            disabled={!!isExporting}
-            onClick={handleDownload}
-            className="flex-1 px-6 py-4 rounded-full font-bold shadow-lg flex items-center justify-center gap-2 bg-white border-2 border-pink-400 text-pink-500"
-          >
-            Download
-          </button>
-          <button
-            disabled={!!isExporting}
-            onClick={handleShare}
-            className="flex-1 px-6 py-4 rounded-full font-bold shadow-xl flex items-center justify-center gap-2 bg-gradient-to-r from-rose-500 to-pink-400 text-white"
-          >
-            Share
-          </button>
-        </div>
-
-        <button onClick={onReset} className="w-full py-3 text-pink-400 text-xs font-bold uppercase tracking-widest">
+        <button onClick={onReset} className="w-full py-4 bg-pink-500 text-white rounded-full font-bold shadow-lg hover:scale-105 active:scale-95 transition-all">
           Retake Photos
         </button>
       </div>
-      {/* iOS Save Modal */}
-      {previewUrl && (
-        <div className="fixed inset-0 z-[100] bg-black/90 backdrop-blur-md flex flex-col items-center justify-center p-6 animate-in fade-in duration-300">
-          <button
-            onClick={() => setPreviewUrl(null)}
-            className="absolute top-6 right-6 text-white bg-white/20 p-2 rounded-full hover:bg-white/40 transition-colors"
-          >
-            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-            </svg>
-          </button>
-
-          <div className="text-center space-y-4 max-w-sm">
-            <h3 className="text-white font-bold text-xl">Save your Memory!</h3>
-            <p className="text-pink-200 text-sm">Long press the image below and select <span className="text-white font-bold">"Save to Photos"</span></p>
-
-            <div className="relative group">
-              <img src={previewUrl} className="w-full h-auto rounded-lg shadow-2xl border-4 border-white" alt="Your Love Strip" />
-              <div className="absolute inset-0 bg-white/10 pointer-events-none rounded-lg" />
-            </div>
-
-            <button
-              onClick={() => setPreviewUrl(null)}
-              className="w-full py-4 bg-pink-500 text-white rounded-full font-bold shadow-lg mt-4"
-            >
-              Done
-            </button>
-          </div>
-        </div>
-      )}
     </div>
   );
 };
