@@ -147,40 +147,7 @@ export default function App() {
 
               <div className="flex flex-col items-center gap-6 w-full max-w-2xl">
                 <div className="w-full grid grid-cols-1 md:grid-cols-3 gap-4 relative">
-                  {/* Atmosphere / Background Selection */}
-                  {!isCapturing && (
-                    <div className="glass-card p-4 sm:p-5 rounded-3xl flex flex-col items-center gap-3 h-fit">
-                      <h3 className="text-pink-500 font-bold text-[10px] uppercase tracking-widest">Atmosphere</h3>
-                      <div className="flex flex-wrap justify-center gap-2 max-h-48 overflow-y-auto p-1 custom-scrollbar">
-                        {ALL_BACKGROUNDS.map(bg => {
-                          const isSelected = selectedBg.id === bg.id;
-                          const bgStyle = bg.imageUrl ? { 
-                            backgroundImage: `url(${bg.imageUrl})`, 
-                            backgroundSize: 'contain', 
-                            backgroundRepeat: 'no-repeat', 
-                            backgroundPosition: 'center', 
-                            backgroundColor: '#fff' 
-                          } : {};
-                          
-                          return (
-                            <button
-                              key={bg.id}
-                              onClick={() => setSelectedBg(bg)}
-                              className={`w-9 h-9 sm:w-11 sm:h-11 rounded-2xl border-2 transition-transform hover:scale-105 active:scale-95 flex items-center justify-center overflow-hidden shadow-sm ${isSelected ? 'border-pink-500 scale-105 ring-2 ring-pink-100' : 'border-white/50'}`}
-                              title={bg.name}
-                            >
-                              <div
-                                className={`w-full h-full ${bg.className} flex items-center justify-center pointer-events-none`}
-                                style={bgStyle}
-                              >
-                                {!bg.imageUrl && <span className="text-lg">{bg.icon}</span>}
-                              </div>
-                            </button>
-                          );
-                        })}
-                      </div>
-                    </div>
-                  )}
+              
 
                   {/* Frame Selection */}
                   {!isCapturing && (
