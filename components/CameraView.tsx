@@ -21,60 +21,52 @@ export const CameraView: React.FC<CameraViewProps> = ({ onCapture, isCapturing, 
   const stickerImages = useRef<{ [url: string]: HTMLImageElement }>({});
   const frameImage = useRef<HTMLImageElement | null>(null);
   const backgroundImage = useRef<HTMLImageElement | null>(null);
-  const [imagesLoaded, setImagesLoaded] = useState(false);
 
-  // Preload all images efficiently
+  // Preload stickers only when they change
   useEffect(() => {
-    const loadPromises: Promise<void>[] = [];
-
-    // Load stickers
     selectedStickers.forEach(sticker => {
       if (!stickerImages.current[sticker.url]) {
         const img = new Image();
         img.crossOrigin = 'anonymous';
-        const promise = new Promise<void>((resolve) => {
-          img.onload = () => resolve();
-          img.onerror = () => resolve(); // Continue even if fails
-        });
         img.src = sticker.url;
         stickerImages.current[sticker.url] = img;
-        loadPromises.push(promise);
       }
     });
+  }, [selectedStickers]);
 
-    // Load frame
+  // Preload frame only when it changes
+  useEffect(() => {
     if (frame.imageUrl) {
       const img = new Image();
       img.crossOrigin = 'anonymous';
-      const promise = new Promise<void>((resolve) => {
-        img.onload = () => resolve();
-        img.onerror = () => resolve();
-      });
       img.src = frame.imageUrl;
-      frameImage.current = img;
-      loadPromises.push(promise);
+      img.onload = () => {
+        frameImage.current = img;
+      };
+      img.onerror = () => {
+        frameImage.current = null;
+      };
     } else {
       frameImage.current = null;
     }
+  }, [frame.imageUrl]);
 
-    // Load background
+  // Preload background only when it changes
+  useEffect(() => {
     if (background.imageUrl) {
       const img = new Image();
       img.crossOrigin = 'anonymous';
-      const promise = new Promise<void>((resolve) => {
-        img.onload = () => resolve();
-        img.onerror = () => resolve();
-      });
       img.src = background.imageUrl;
-      backgroundImage.current = img;
-      loadPromises.push(promise);
+      img.onload = () => {
+        backgroundImage.current = img;
+      };
+      img.onerror = () => {
+        backgroundImage.current = null;
+      };
     } else {
       backgroundImage.current = null;
     }
-
-    // Wait for all images to load
-    Promise.all(loadPromises).then(() => setImagesLoaded(true));
-  }, [selectedStickers, frame, background]);
+  }, [background.imageUrl]);
 
   useEffect(() => {
     let mounted = true;

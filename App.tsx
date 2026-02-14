@@ -45,7 +45,6 @@ export default function App() {
   const [isCapturing, setIsCapturing] = useState(false);
   const [countdown, setCountdown] = useState<number | null>(null);
   const [selectedFrame, setSelectedFrame] = useState<FrameOption>(ALL_FRAMES[0]);
-  const [hoveredFrame, setHoveredFrame] = useState<FrameOption | null>(null);
   const [selectedBg, setSelectedBg] = useState<BackgroundOption>(ALL_BACKGROUNDS[0]);
   const [selectedStickers, setSelectedStickers] = useState<StickerOption[]>([]);
   const [stickerStyle, setStickerStyle] = useState<'single' | 'burst' | 'chaos' | 'border' | 'corners'>('single');
@@ -86,6 +85,10 @@ export default function App() {
           }
           return newPhotos;
         });
+      })
+      .catch(err => {
+        console.error('Failed to process photo:', err);
+        setIsCapturing(false);
       });
   }, []);
 
@@ -100,15 +103,21 @@ export default function App() {
 
   const isDarkBg = selectedBg.id === 'starlight';
 
+  // Memoize background style to prevent re-renders
+  const backgroundStyle = React.useMemo(() => {
+    if (!selectedBg.imageUrl) return {};
+    return {
+      backgroundImage: `url(${selectedBg.imageUrl})`,
+      backgroundSize: selectedBg.id.startsWith('bg-sticker') ? '80px 80px' : 'cover',
+      backgroundRepeat: selectedBg.id.startsWith('bg-sticker') ? 'repeat' : 'no-repeat',
+      backgroundAttachment: 'fixed'
+    };
+  }, [selectedBg.imageUrl, selectedBg.id]);
+
   return (
     <div
       className={`min-h-screen py-8 px-4 overflow-x-hidden transition-all duration-700 relative flex flex-col items-center justify-center ${selectedBg.className}`}
-      style={selectedBg.imageUrl ? {
-        backgroundImage: `url(${selectedBg.imageUrl})`,
-        backgroundSize: selectedBg.id.startsWith('bg-sticker') ? '80px 80px' : 'cover',
-        backgroundRepeat: selectedBg.id.startsWith('bg-sticker') ? 'repeat' : 'no-repeat',
-        backgroundAttachment: 'fixed'
-      } : {}}
+      style={backgroundStyle}
     >
       <BackgroundParticles />
 
@@ -143,21 +152,32 @@ export default function App() {
                     <div className="glass-card p-4 sm:p-5 rounded-3xl flex flex-col items-center gap-3 h-fit">
                       <h3 className="text-pink-500 font-bold text-[10px] uppercase tracking-widest">Atmosphere</h3>
                       <div className="flex flex-wrap justify-center gap-2 max-h-48 overflow-y-auto p-1 custom-scrollbar">
-                        {ALL_BACKGROUNDS.map(bg => (
-                          <button
-                            key={bg.id}
-                            onClick={() => setSelectedBg(bg)}
-                            className={`w-9 h-9 sm:w-11 sm:h-11 rounded-2xl border-2 transition-all hover:scale-110 active:scale-95 flex items-center justify-center overflow-hidden shadow-sm ${selectedBg.id === bg.id ? 'border-pink-500 scale-110 ring-2 ring-pink-100' : 'border-white/50'}`}
-                            title={bg.name}
-                          >
-                            <div
-                              className={`w-full h-full ${bg.className} flex items-center justify-center`}
-                              style={bg.imageUrl ? { backgroundImage: `url(${bg.imageUrl})`, backgroundSize: 'contain', backgroundRepeat: 'no-repeat', backgroundPosition: 'center', backgroundColor: '#fff' } : {}}
+                        {ALL_BACKGROUNDS.map(bg => {
+                          const isSelected = selectedBg.id === bg.id;
+                          const bgStyle = bg.imageUrl ? { 
+                            backgroundImage: `url(${bg.imageUrl})`, 
+                            backgroundSize: 'contain', 
+                            backgroundRepeat: 'no-repeat', 
+                            backgroundPosition: 'center', 
+                            backgroundColor: '#fff' 
+                          } : {};
+                          
+                          return (
+                            <button
+                              key={bg.id}
+                              onClick={() => setSelectedBg(bg)}
+                              className={`w-9 h-9 sm:w-11 sm:h-11 rounded-2xl border-2 transition-transform hover:scale-105 active:scale-95 flex items-center justify-center overflow-hidden shadow-sm ${isSelected ? 'border-pink-500 scale-105 ring-2 ring-pink-100' : 'border-white/50'}`}
+                              title={bg.name}
                             >
-                              {!bg.imageUrl && <span className="text-lg">{bg.icon}</span>}
-                            </div>
-                          </button>
-                        ))}
+                              <div
+                                className={`w-full h-full ${bg.className} flex items-center justify-center pointer-events-none`}
+                                style={bgStyle}
+                              >
+                                {!bg.imageUrl && <span className="text-lg">{bg.icon}</span>}
+                              </div>
+                            </button>
+                          );
+                        })}
                       </div>
                     </div>
                   )}
@@ -167,20 +187,22 @@ export default function App() {
                     <div className="glass-card p-4 sm:p-5 rounded-3xl flex flex-col items-center gap-3 h-fit">
                       <h3 className="text-pink-500 font-bold text-[10px] uppercase tracking-widest">Frame Style</h3>
                       <div className="flex flex-wrap justify-center gap-2.5 max-h-40 overflow-y-auto p-1 custom-scrollbar">
-                        {ALL_FRAMES.map(f => (
-                          <button
-                            key={f.id}
-                            onMouseEnter={() => setHoveredFrame(f)}
-                            onMouseLeave={() => setHoveredFrame(null)}
-                            onClick={() => setSelectedFrame(f)}
-                            className={`w-8 h-8 sm:w-10 sm:h-10 rounded-full border-2 transition-all hover:scale-110 active:scale-95 overflow-hidden ${selectedFrame.id === f.id ? 'border-pink-500 scale-110 ring-2 ring-pink-100' : 'border-gray-200'}`}
-                            style={f.imageUrl
-                              ? { backgroundImage: `url(${f.imageUrl})`, backgroundSize: 'cover' }
-                              : { backgroundColor: f.previewColor }
-                            }
-                            title={f.name}
-                          />
-                        ))}
+                        {ALL_FRAMES.map(f => {
+                          const isSelected = selectedFrame.id === f.id;
+                          const frameStyle = f.imageUrl
+                            ? { backgroundImage: `url(${f.imageUrl})`, backgroundSize: 'cover' }
+                            : { backgroundColor: f.previewColor };
+                          
+                          return (
+                            <button
+                              key={f.id}
+                              onClick={() => setSelectedFrame(f)}
+                              className={`w-8 h-8 sm:w-10 sm:h-10 rounded-full border-2 transition-transform hover:scale-105 active:scale-95 overflow-hidden ${isSelected ? 'border-pink-500 scale-105 ring-2 ring-pink-100' : 'border-gray-200'}`}
+                              style={frameStyle}
+                              title={f.name}
+                            />
+                          );
+                        })}
                       </div>
                     </div>
                   )}
