@@ -9,6 +9,7 @@ export interface FrameOption {
   name: string;
   className: string;
   previewColor: string;
+  imageUrl?: string;
 }
 
 export interface BackgroundOption {
@@ -16,6 +17,7 @@ export interface BackgroundOption {
   name: string;
   className: string;
   previewColor: string;
+  imageUrl?: string;
 }
 
 export interface StickerOption {

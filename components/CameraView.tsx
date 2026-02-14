@@ -1,17 +1,31 @@
-
 import React, { useRef, useEffect, useState, useCallback } from 'react';
+import { CapturedPhoto, StickerOption } from '../types';
 import { audioService } from '../services/audioService';
 
 interface CameraViewProps {
   onCapture: (dataUrl: string) => void;
   isCapturing: boolean;
   countdown: number | null;
+  selectedStickers: StickerOption[];
 }
 
-export const CameraView: React.FC<CameraViewProps> = ({ onCapture, isCapturing, countdown }) => {
+export const CameraView: React.FC<CameraViewProps> = ({ onCapture, isCapturing, countdown, selectedStickers }) => {
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [stream, setStream] = useState<MediaStream | null>(null);
+
+  // Pre-load stickers as images for canvas drawing
+  const stickerImages = useRef<{ [url: string]: HTMLImageElement }>({});
+
+  useEffect(() => {
+    selectedStickers.forEach(sticker => {
+      if (!stickerImages.current[sticker.url]) {
+        const img = new Image();
+        img.src = sticker.url;
+        stickerImages.current[sticker.url] = img;
+      }
+    });
+  }, [selectedStickers]);
 
   useEffect(() => {
     let mounted = true;
@@ -62,7 +76,7 @@ export const CameraView: React.FC<CameraViewProps> = ({ onCapture, isCapturing, 
     }
   }, [stream]);
 
-  const takeSnapshot = useCallback(() => {
+  const takeSnapshot = useCallback(async () => {
     if (videoRef.current && canvasRef.current) {
       audioService.playShutter();
       const video = videoRef.current;
@@ -72,14 +86,43 @@ export const CameraView: React.FC<CameraViewProps> = ({ onCapture, isCapturing, 
         // Use actual video dimensions for high quality
         canvas.width = video.videoWidth;
         canvas.height = video.videoHeight;
+
+        // Mirror the image
         context.translate(canvas.width, 0);
         context.scale(-1, 1);
         context.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+        // Restore scale for drawing stickers (so stickers aren't mirrored if we don't want them to be)
+        // Actually, usually stickers stay normal.
+        context.setTransform(1, 0, 0, 1, 0, 0);
+
+        // Draw stickers
+        const stickerSize = canvas.width * 0.15;
+        const STICKER_POSITIONS = [
+          { x: 0.1, y: 0.75 },  // Bottom Left
+          { x: 0.75, y: 0.1 },  // Top Right
+          { x: 0.1, y: 0.1 },   // Top Left
+          { x: 0.75, y: 0.75 }, // Bottom Right
+          { x: 0.425, y: 0.1 }, // Top Center
+          { x: 0.1, y: 0.4 },   // Mid Left
+          { x: 0.75, y: 0.4 },  // Mid Right
+        ];
+
+        selectedStickers.forEach((sticker, index) => {
+          const img = stickerImages.current[sticker.url];
+          if (img && img.complete) {
+            const pos = STICKER_POSITIONS[index % STICKER_POSITIONS.length];
+            const x = canvas.width * pos.x;
+            const y = canvas.height * pos.y;
+            context.drawImage(img, x, y, stickerSize, stickerSize);
+          }
+        });
+
         const dataUrl = canvas.toDataURL('image/png', 0.9);
         onCapture(dataUrl);
       }
     }
-  }, [onCapture]);
+  }, [onCapture, selectedStickers]);
 
   useEffect(() => {
     if (countdown !== null && countdown > 0) {
@@ -99,6 +142,33 @@ export const CameraView: React.FC<CameraViewProps> = ({ onCapture, isCapturing, 
         muted
         className="w-full h-full object-cover scale-x-[-1]"
       />
+
+      {/* Sticker Overlays on Camera */}
+      <div className="absolute inset-0 pointer-events-none">
+        {selectedStickers.map((sticker, index) => {
+          const STICKER_STYLES = [
+            { bottom: '5%', left: '5%' },   // Bottom Left
+            { top: '5%', right: '5%' },    // Top Right
+            { top: '5%', left: '5%' },     // Top Left
+            { bottom: '5%', right: '5%' }, // Bottom Right
+            { top: '5%', left: '42.5%' },  // Top Center
+            { top: '40%', left: '5%' },    // Mid Left
+            { top: '40%', right: '5%' },   // Mid Right
+          ];
+          const pos = STICKER_STYLES[index % STICKER_STYLES.length];
+
+          return (
+            <div
+              key={sticker.id}
+              className="absolute w-[15%] h-[15%] transition-all duration-300 animate-in zoom-in"
+              style={pos}
+            >
+              <img src={sticker.url} className="w-full h-full object-contain drop-shadow-lg" alt="Decoration" />
+            </div>
+          );
+        })}
+      </div>
+
       <canvas ref={canvasRef} className="hidden" />
 
       {countdown !== null && (

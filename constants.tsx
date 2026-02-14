@@ -18,7 +18,7 @@ export const BACKGROUNDS: BackgroundOption[] = [
 ];
 
 // Automatically import all stickers from assets/stickers
-const stickerFiles = import.meta.glob('./assets/stickers/*.{png,jpg,jpeg,svg,webp}', { eager: true });
+const stickerFiles = (import.meta as any).glob('./assets/stickers/*.{png,jpg,jpeg,svg,webp}', { eager: true });
 
 export const STICKERS: StickerOption[] = Object.entries(stickerFiles).map(([path, data]: [string, any]) => {
   const name = path.split('/').pop()?.split('.')[0] || 'Sticker';
@@ -28,6 +28,24 @@ export const STICKERS: StickerOption[] = Object.entries(stickerFiles).map(([path
     name: `Sticker ${name}`,
   };
 });
+
+// Create sticker-based background options
+export const STICKER_BACKGROUNDS: BackgroundOption[] = STICKERS.map(s => ({
+  id: `bg-${s.id}`,
+  name: `${s.name} Pattern`,
+  className: 'bg-sticker-pattern',
+  previewColor: '#ffffff',
+  imageUrl: s.url
+}));
+
+// Create sticker-based frame options
+export const STICKER_FRAMES: FrameOption[] = STICKERS.map(s => ({
+  id: `frame-${s.id}`,
+  name: `${s.name} Border`,
+  className: 'frame-sticker-border',
+  previewColor: '#ffffff',
+  imageUrl: s.url
+}));
 
 export const HEART_ICON = (
   <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 24 24">
