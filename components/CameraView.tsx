@@ -36,8 +36,8 @@ export const CameraView: React.FC<CameraViewProps> = ({ onCapture, isCapturing, 
         const mediaStream = await navigator.mediaDevices.getUserMedia({
           video: {
             facingMode: 'user',
-            width: { ideal: 1280, max: 1920 },
-            height: { ideal: 720, max: 1080 }
+            width: { ideal: 1920, max: 4096 }, // Target 1080p, support up to 4K
+            height: { ideal: 1080, max: 2160 }
           },
           audio: false
         }).catch(() => {
@@ -87,42 +87,23 @@ export const CameraView: React.FC<CameraViewProps> = ({ onCapture, isCapturing, 
         canvas.width = video.videoWidth;
         canvas.height = video.videoHeight;
 
+        // High quality drawing settings
+        context.imageSmoothingEnabled = true;
+        context.imageSmoothingQuality = 'high';
+
         // Mirror the image
         context.translate(canvas.width, 0);
         context.scale(-1, 1);
         context.drawImage(video, 0, 0, canvas.width, canvas.height);
 
-        // Restore scale for drawing stickers (so stickers aren't mirrored if we don't want them to be)
-        // Actually, usually stickers stay normal.
+        // Restore scale for drawing stickers
         context.setTransform(1, 0, 0, 1, 0, 0);
-
-        // Draw stickers
-        const stickerSize = canvas.width * 0.15;
-        const STICKER_POSITIONS = [
-          { x: 0.1, y: 0.75 },  // Bottom Left
-          { x: 0.75, y: 0.1 },  // Top Right
-          { x: 0.1, y: 0.1 },   // Top Left
-          { x: 0.75, y: 0.75 }, // Bottom Right
-          { x: 0.425, y: 0.1 }, // Top Center
-          { x: 0.1, y: 0.4 },   // Mid Left
-          { x: 0.75, y: 0.4 },  // Mid Right
-        ];
-
-        selectedStickers.forEach((sticker, index) => {
-          const img = stickerImages.current[sticker.url];
-          if (img && img.complete) {
-            const pos = STICKER_POSITIONS[index % STICKER_POSITIONS.length];
-            const x = canvas.width * pos.x;
-            const y = canvas.height * pos.y;
-            context.drawImage(img, x, y, stickerSize, stickerSize);
-          }
-        });
 
         const dataUrl = canvas.toDataURL('image/png', 0.9);
         onCapture(dataUrl);
       }
     }
-  }, [onCapture, selectedStickers]);
+  }, [onCapture]);
 
   useEffect(() => {
     if (countdown !== null && countdown > 0) {
@@ -163,7 +144,12 @@ export const CameraView: React.FC<CameraViewProps> = ({ onCapture, isCapturing, 
               className="absolute w-[15%] h-[15%] transition-all duration-300 animate-in zoom-in"
               style={pos}
             >
-              <img src={sticker.url} className="w-full h-full object-contain drop-shadow-lg" alt="Decoration" />
+              <img
+                src={sticker.url}
+                className="w-full h-full object-contain drop-shadow-md"
+                alt="Sticker"
+                crossOrigin="anonymous"
+              />
             </div>
           );
         })}

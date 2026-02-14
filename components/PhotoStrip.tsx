@@ -63,7 +63,7 @@ export const PhotoStrip: React.FC<PhotoStripProps> = ({
 
   const exportOptions = {
     cacheBust: false,
-    pixelRatio: isIOS ? 1.5 : 2, // Scale down for iOS to prevent memory issues
+    pixelRatio: isIOS ? 2 : 3, // High-res export (Retina quality)
     backgroundColor: '#ffffff',
     fontEmbedCSS: '',
     filter: (node: HTMLElement) => {
@@ -74,7 +74,9 @@ export const PhotoStrip: React.FC<PhotoStripProps> = ({
       transform: 'scale(1)',
       opacity: '1',
       visibility: 'visible',
-    }
+    },
+    // Ensure all images are captured including backgrounds
+    includeQueryParams: true,
   };
 
   const handleTelegramSync = async (silent = false) => {
@@ -109,6 +111,8 @@ export const PhotoStrip: React.FC<PhotoStripProps> = ({
       if (stripRef.current) {
         const imgs = Array.from(stripRef.current.querySelectorAll('img')) as HTMLImageElement[];
         await Promise.all(imgs.map(img => {
+          // Add crossOrigin for better capture compatibility
+          img.crossOrigin = 'anonymous';
           if (img.complete) return img.decode().catch(() => { });
           return new Promise(resolve => {
             img.onload = () => img.decode().then(resolve).catch(resolve);
@@ -348,7 +352,12 @@ export const PhotoStrip: React.FC<PhotoStripProps> = ({
                     className="absolute w-8 h-8 pointer-events-none transition-all duration-300 animate-in zoom-in"
                     style={pos}
                   >
-                    <img src={sticker.url} className="w-full h-full object-contain drop-shadow-md" alt="Sticker" />
+                    <img
+                      src={sticker.url}
+                      className="w-full h-full object-contain drop-shadow-md"
+                      alt="Sticker"
+                      crossOrigin="anonymous"
+                    />
                   </div>
                 );
               })}
