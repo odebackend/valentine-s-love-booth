@@ -18,4 +18,10 @@ export interface BackgroundOption {
   previewColor: string;
 }
 
+export interface StickerOption {
+  id: string;
+  url: string;
+  name: string;
+}
+
 

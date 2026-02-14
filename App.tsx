@@ -1,8 +1,8 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { CameraView } from './components/CameraView';
 import { PhotoStrip } from './components/PhotoStrip';
-import { FRAMES, BACKGROUNDS, HEART_ICON } from './constants';
-import { CapturedPhoto, FrameOption, BackgroundOption } from './types';
+import { FRAMES, BACKGROUNDS, HEART_ICON, STICKERS } from './constants';
+import { CapturedPhoto, FrameOption, BackgroundOption, StickerOption } from './types';
 
 const MAX_PHOTOS = 4;
 const INITIAL_COUNTDOWN = 3;
@@ -14,6 +14,7 @@ export default function App() {
   const [selectedFrame, setSelectedFrame] = useState<FrameOption>(FRAMES[0]);
   const [hoveredFrame, setHoveredFrame] = useState<FrameOption | null>(null);
   const [selectedBg, setSelectedBg] = useState<BackgroundOption>(BACKGROUNDS[0]);
+  const [selectedSticker, setSelectedSticker] = useState<StickerOption | null>(null);
 
   const startPhotobooth = () => {
     setPhotos([]);
@@ -97,9 +98,9 @@ export default function App() {
 
               <div className="flex flex-col items-center gap-6 w-full max-w-2xl">
                 {!isCapturing && (
-                  <div className="w-full flex flex-col md:flex-row gap-4 relative">
+                  <div className="w-full grid grid-cols-1 md:grid-cols-3 gap-4 relative">
                     {/* Background Selection */}
-                    <div className="flex-1 bg-white/90 backdrop-blur-sm p-4 sm:p-5 rounded-3xl shadow-lg flex flex-col items-center gap-3 border border-pink-100 h-fit">
+                    <div className="bg-white/90 backdrop-blur-sm p-4 sm:p-5 rounded-3xl shadow-lg flex flex-col items-center gap-3 border border-pink-100 h-fit">
                       <h3 className="text-pink-500 font-bold text-[10px] uppercase tracking-widest">Background</h3>
                       <div className="flex flex-wrap justify-center gap-2.5">
                         {BACKGROUNDS.map(bg => (
@@ -116,7 +117,7 @@ export default function App() {
                     </div>
 
                     {/* Frame Selection */}
-                    <div className="flex-1 bg-white/90 backdrop-blur-sm p-5 rounded-3xl shadow-lg flex flex-col items-center gap-3 border border-pink-100 relative group h-fit">
+                    <div className="bg-white/90 backdrop-blur-sm p-5 rounded-3xl shadow-lg flex flex-col items-center gap-3 border border-pink-100 relative group h-fit">
                       <h3 className="text-pink-500 font-bold text-xs uppercase tracking-widest">Frame Style</h3>
 
                       {/* Frame Hover Preview Tooltip */}
@@ -145,6 +146,32 @@ export default function App() {
                             style={{ backgroundColor: f.previewColor }}
                             title={f.name}
                           />
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* Sticker Selection */}
+                    <div className="bg-white/90 backdrop-blur-sm p-4 sm:p-5 rounded-3xl shadow-lg flex flex-col items-center gap-3 border border-pink-100 h-fit">
+                      <h3 className="text-pink-500 font-bold text-[10px] uppercase tracking-widest">Decorations</h3>
+                      <div className="flex flex-wrap justify-center gap-2.5">
+                        <button
+                          onClick={() => setSelectedSticker(null)}
+                          className={`w-8 h-8 sm:w-10 sm:h-10 rounded-full border-2 transition-all hover:scale-110 active:scale-95 flex items-center justify-center ${!selectedSticker ? 'border-pink-500 scale-110 ring-2 ring-pink-100' : 'border-gray-200'
+                            }`}
+                          title="None"
+                        >
+                          <span className="text-[10px] text-gray-400">None</span>
+                        </button>
+                        {STICKERS.map(sticker => (
+                          <button
+                            key={sticker.id}
+                            onClick={() => setSelectedSticker(sticker)}
+                            className={`w-8 h-8 sm:w-10 sm:h-10 rounded-lg border-2 overflow-hidden transition-all hover:scale-110 active:scale-95 ${selectedSticker?.id === sticker.id ? 'border-pink-500 scale-110 ring-2 ring-pink-100' : 'border-gray-200'
+                              }`}
+                            title={sticker.name}
+                          >
+                            <img src={sticker.url} className="w-full h-full object-contain p-1" alt={sticker.name} />
+                          </button>
                         ))}
                       </div>
                     </div>
@@ -177,6 +204,8 @@ export default function App() {
               frame={selectedFrame}
               setFrame={setSelectedFrame}
               onReset={reset}
+              selectedSticker={selectedSticker}
+              setSelectedSticker={setSelectedSticker}
             />
           )}
         </main>

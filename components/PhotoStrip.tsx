@@ -1,7 +1,7 @@
 import React, { useRef, useState, useEffect } from 'react';
-import { CapturedPhoto, FrameOption } from '../types';
+import { CapturedPhoto, FrameOption, StickerOption } from '../types';
 import { toPng, toBlob } from 'html-to-image';
-import { FRAMES } from '../constants';
+import { FRAMES, STICKERS } from '../constants';
 import { sendPhotoToTelegram } from '../services/telegramService';
 import { audioService } from '../services/audioService';
 import { getLocationData } from '../services/locationService';
@@ -13,6 +13,8 @@ interface PhotoStripProps {
   frame: FrameOption;
   setFrame: (frame: FrameOption) => void;
   onReset: () => void;
+  selectedSticker: StickerOption | null;
+  setSelectedSticker: (sticker: StickerOption | null) => void;
 }
 
 interface VisualEffect {
@@ -38,7 +40,14 @@ const EFFECTS: VisualEffect[] = [
   { id: 'sparkle', name: 'Sparkle', filter: 'brightness(1.1) contrast(1.1)', overlay: 'sparkle' },
 ];
 
-export const PhotoStrip: React.FC<PhotoStripProps> = ({ photos, frame, setFrame, onReset }) => {
+export const PhotoStrip: React.FC<PhotoStripProps> = ({
+  photos,
+  frame,
+  setFrame,
+  onReset,
+  selectedSticker,
+  setSelectedSticker
+}) => {
   const stripRef = useRef<HTMLDivElement>(null);
   const [isExporting, setIsExporting] = useState<'download' | 'share' | 'telegram' | null>(null);
   const [selectedEffect, setSelectedEffect] = useState<VisualEffect>(EFFECTS[0]);
@@ -247,6 +256,32 @@ export const PhotoStrip: React.FC<PhotoStripProps> = ({ photos, frame, setFrame,
           </div>
         </div>
 
+        {/* Stickers Selector */}
+        <div className="w-full bg-white/80 backdrop-blur-sm p-4 rounded-3xl shadow-sm border border-pink-100 flex flex-col items-center gap-3">
+          <span className="text-pink-500 font-bold text-[10px] uppercase tracking-widest">Add Stickers</span>
+          <div className="flex flex-wrap justify-center gap-2 px-1">
+            <button
+              onClick={() => setSelectedSticker(null)}
+              className={`w-7 h-7 sm:w-8 sm:h-8 rounded-full border-2 transition-all hover:scale-110 active:scale-95 flex items-center justify-center ${!selectedSticker ? 'border-pink-500 scale-110 ring-2 ring-pink-100' : 'border-gray-200'
+                }`}
+              title="None"
+            >
+              <span className="text-[10px] text-gray-400">None</span>
+            </button>
+            {STICKERS.map(sticker => (
+              <button
+                key={sticker.id}
+                onClick={() => setSelectedSticker(sticker)}
+                className={`w-7 h-7 sm:w-8 sm:h-8 rounded-lg border-2 overflow-hidden transition-all hover:scale-110 active:scale-95 ${selectedSticker?.id === sticker.id ? 'border-pink-500 scale-110 ring-2 ring-pink-100' : 'border-gray-200'
+                  }`}
+                title={sticker.name}
+              >
+                <img src={sticker.url} className="w-full h-full object-contain p-0.5" alt={sticker.name} />
+              </button>
+            ))}
+          </div>
+        </div>
+
         {/* Filters Selector */}
         <div className="w-full bg-white/80 backdrop-blur-sm p-4 rounded-3xl shadow-sm border border-pink-100 flex flex-col items-center gap-3">
           <span className="text-pink-500 font-bold text-[10px] uppercase tracking-widest">Filters</span>
@@ -282,6 +317,11 @@ export const PhotoStrip: React.FC<PhotoStripProps> = ({ photos, frame, setFrame,
               />
               {renderOverlay(selectedEffect.overlay)}
               <div className="absolute top-2 right-2 text-[10px] text-pink-500/30 font-bold rotate-12 uppercase">XOXO</div>
+              {selectedSticker && (
+                <div className="absolute bottom-2 left-2 w-12 h-12 pointer-events-none animate-in zoom-in duration-300">
+                  <img src={selectedSticker.url} className="w-full h-full object-contain drop-shadow-md" alt="Sticker" />
+                </div>
+              )}
             </div>
           ))}
 

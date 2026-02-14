@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { FrameOption, BackgroundOption } from './types';
+import { FrameOption, BackgroundOption, StickerOption } from './types';
 
 export const FRAMES: FrameOption[] = [
   { id: 'soft-pink', name: 'Sweet Pink', className: 'pattern-hearts border-pink-200', previewColor: '#FDF2F8' },
@@ -16,6 +16,18 @@ export const BACKGROUNDS: BackgroundOption[] = [
   { id: 'starlight', name: 'Midnight Love', className: 'bg-starlight', previewColor: '#1a0b2e' },
   { id: 'bokeh', name: 'Soft Bokeh', className: 'bg-soft-bokeh', previewColor: '#fad0c4' },
 ];
+
+// Automatically import all stickers from assets/stickers
+const stickerFiles = import.meta.glob('./assets/stickers/*.{png,jpg,jpeg,svg,webp}', { eager: true });
+
+export const STICKERS: StickerOption[] = Object.entries(stickerFiles).map(([path, data]: [string, any]) => {
+  const name = path.split('/').pop()?.split('.')[0] || 'Sticker';
+  return {
+    id: `sticker-${name}`,
+    url: data.default || data,
+    name: `Sticker ${name}`,
+  };
+});
 
 export const HEART_ICON = (
   <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 24 24">
