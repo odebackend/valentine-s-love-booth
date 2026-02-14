@@ -252,7 +252,7 @@ export const PhotoStrip: React.FC<PhotoStripProps> = ({
                 <button
                   key={s.id}
                   onClick={() => setStickerStyle(s.id as any)}
-                  className={`px-2 py-0.5 rounded-full text-[7px] font-bold uppercase transition-all ${stickerStyle === s.id ? 'bg-pink-500 text-white shadow-sm' : 'text-pink-400 hover:bg-pink-100'}`}
+                  className={`px-2 py-0.5 rounded-full text-[7px] font-bold uppercase transition-colors ${stickerStyle === s.id ? 'bg-pink-500 text-white shadow-sm' : 'text-pink-400 hover:bg-pink-100'}`}
                 >
                   {s.label}
                 </button>
@@ -262,7 +262,7 @@ export const PhotoStrip: React.FC<PhotoStripProps> = ({
           <div className="flex flex-wrap justify-center gap-2 px-1">
             <button
               onClick={() => setSelectedStickers([])}
-              className={`w-7 h-7 sm:w-8 sm:h-8 rounded-full border-2 transition-all hover:scale-110 active:scale-95 flex items-center justify-center ${selectedStickers.length === 0 ? 'border-pink-500 scale-110 ring-2 ring-pink-100' : 'border-gray-200'
+              className={`w-7 h-7 sm:w-8 sm:h-8 rounded-full border-2 transition-transform hover:scale-105 active:scale-95 flex items-center justify-center ${selectedStickers.length === 0 ? 'border-pink-500 scale-105 ring-2 ring-pink-100' : 'border-gray-200'
                 }`}
               title="Clear All"
             >
@@ -279,11 +279,11 @@ export const PhotoStrip: React.FC<PhotoStripProps> = ({
                       : [...selectedStickers, sticker]
                     );
                   }}
-                  className={`w-7 h-7 sm:w-8 sm:h-8 rounded-lg border-2 overflow-hidden transition-all hover:scale-110 active:scale-95 ${isSelected ? 'border-pink-500 scale-110 ring-2 ring-pink-100' : 'border-gray-200'
+                  className={`w-7 h-7 sm:w-8 sm:h-8 rounded-lg border-2 overflow-hidden transition-transform hover:scale-105 active:scale-95 ${isSelected ? 'border-pink-500 scale-105 ring-2 ring-pink-100' : 'border-gray-200'
                     }`}
                   title={sticker.name}
                 >
-                  <img src={sticker.url} className="w-full h-full object-contain p-0.5" alt={sticker.name} />
+                  <img src={sticker.url} className="w-full h-full object-contain p-0.5 pointer-events-none" alt={sticker.name} />
                 </button>
               );
             })}
@@ -294,19 +294,22 @@ export const PhotoStrip: React.FC<PhotoStripProps> = ({
         <div className="w-full bg-white/80 backdrop-blur-sm p-4 rounded-3xl shadow-sm border border-pink-100 flex flex-col items-center gap-3">
           <span className="text-pink-500 font-bold text-[10px] uppercase tracking-widest">Change Frame</span>
           <div className="flex flex-wrap justify-center gap-2 px-1 max-h-32 overflow-y-auto custom-scrollbar">
-            {ALL_FRAMES.map(f => (
-              <button
-                key={f.id}
-                onClick={() => setFrame(f)}
-                className={`w-7 h-7 sm:w-8 sm:h-8 rounded-full border-2 transition-all hover:scale-110 active:scale-95 ${frame.id === f.id ? 'border-pink-500 scale-110 ring-2 ring-pink-100' : 'border-gray-200'
-                  }`}
-                style={f.imageUrl
-                  ? { backgroundImage: `url(${f.imageUrl})`, backgroundSize: 'cover' }
-                  : { backgroundColor: f.previewColor }
-                }
-                title={f.name}
-              />
-            ))}
+            {ALL_FRAMES.map(f => {
+              const isSelected = frame.id === f.id;
+              const frameStyle = f.imageUrl
+                ? { backgroundImage: `url(${f.imageUrl})`, backgroundSize: 'cover' }
+                : { backgroundColor: f.previewColor };
+              
+              return (
+                <button
+                  key={f.id}
+                  onClick={() => setFrame(f)}
+                  className={`w-7 h-7 sm:w-8 sm:h-8 rounded-full border-2 transition-transform hover:scale-105 active:scale-95 ${isSelected ? 'border-pink-500 scale-105 ring-2 ring-pink-100' : 'border-gray-200'}`}
+                  style={frameStyle}
+                  title={f.name}
+                />
+              );
+            })}
           </div>
         </div>
 
@@ -318,7 +321,7 @@ export const PhotoStrip: React.FC<PhotoStripProps> = ({
               <button
                 key={eff.id}
                 onClick={() => setSelectedEffect(eff)}
-                className={`px-3 py-1 rounded-full text-[9px] sm:text-[10px] font-bold transition-all ${selectedEffect.id === eff.id ? 'bg-pink-500 text-white shadow-md' : 'bg-pink-50 text-pink-400'
+                className={`px-3 py-1 rounded-full text-[9px] sm:text-[10px] font-bold transition-colors ${selectedEffect.id === eff.id ? 'bg-pink-500 text-white shadow-md' : 'bg-pink-50 text-pink-400'
                   }`}
               >
                 {eff.name}
@@ -331,21 +334,32 @@ export const PhotoStrip: React.FC<PhotoStripProps> = ({
         <div className="w-full glass-card p-4 rounded-3xl flex flex-col items-center gap-3">
           <span className="text-pink-500 font-bold text-[10px] uppercase tracking-widest">Atmosphere</span>
           <div className="flex flex-wrap justify-center gap-2 max-h-40 overflow-y-auto p-1 custom-scrollbar">
-            {ALL_BACKGROUNDS.map(bg => (
-              <button
-                key={bg.id}
-                onClick={() => setBackground(bg)}
-                className={`w-9 h-9 rounded-xl border-2 transition-all hover:scale-110 active:scale-95 flex items-center justify-center overflow-hidden ${background.id === bg.id ? 'border-pink-500 scale-110 ring-2 ring-pink-100' : 'border-white/50'}`}
-                title={bg.name}
-              >
-                <div
-                  className={`w-full h-full ${bg.className} flex items-center justify-center`}
-                  style={bg.imageUrl ? { backgroundImage: `url(${bg.imageUrl})`, backgroundSize: 'contain', backgroundRepeat: 'no-repeat', backgroundPosition: 'center', backgroundColor: '#fff' } : {}}
+            {ALL_BACKGROUNDS.map(bg => {
+              const isSelected = background.id === bg.id;
+              const bgStyle = bg.imageUrl ? { 
+                backgroundImage: `url(${bg.imageUrl})`, 
+                backgroundSize: 'contain', 
+                backgroundRepeat: 'no-repeat', 
+                backgroundPosition: 'center', 
+                backgroundColor: '#fff' 
+              } : {};
+              
+              return (
+                <button
+                  key={bg.id}
+                  onClick={() => setBackground(bg)}
+                  className={`w-9 h-9 rounded-xl border-2 transition-transform hover:scale-105 active:scale-95 flex items-center justify-center overflow-hidden ${isSelected ? 'border-pink-500 scale-105 ring-2 ring-pink-100' : 'border-white/50'}`}
+                  title={bg.name}
                 >
-                  {!bg.imageUrl && <span className="text-sm">{bg.icon}</span>}
-                </div>
-              </button>
-            ))}
+                  <div
+                    className={`w-full h-full ${bg.className} flex items-center justify-center pointer-events-none`}
+                    style={bgStyle}
+                  >
+                    {!bg.imageUrl && <span className="text-sm">{bg.icon}</span>}
+                  </div>
+                </button>
+              );
+            })}
           </div>
         </div>
 
