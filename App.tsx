@@ -1,36 +1,44 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { CameraView } from './components/CameraView';
 import { PhotoStrip } from './components/PhotoStrip';
-import { FRAMES, BACKGROUNDS, HEART_ICON, STICKERS, STICKER_BACKGROUNDS, STICKER_FRAMES } from './constants';
-
-const ALL_FRAMES = [...FRAMES, ...STICKER_FRAMES];
-const ALL_BACKGROUNDS = [...BACKGROUNDS, ...STICKER_BACKGROUNDS];
+import { FRAMES, BACKGROUNDS, HEART_ICON, STICKERS, STICKER_BACKGROUNDS, STICKER_FRAMES, ALL_FRAMES, ALL_BACKGROUNDS } from './constants';
 import { CapturedPhoto, FrameOption, BackgroundOption, StickerOption } from './types';
 
 const MAX_PHOTOS = 4;
 const INITIAL_COUNTDOWN = 3;
 
-const BackgroundParticles = () => {
+const BackgroundParticles = React.memo(() => {
+  const particles = React.useMemo(() => {
+    return [...Array(15)].map((_, i) => ({
+      left: `${Math.random() * 100}%`,
+      duration: `${15 + Math.random() * 10}s`,
+      drift: `${(Math.random() - 0.5) * 200}`,
+      delay: `${Math.random() * 10}s`,
+      size: `${1 + Math.random() * 1.5}rem`,
+      emoji: ['❤️', '💖', '💗', '💕', '🌸'][i % 5]
+    }));
+  }, []);
+
   return (
     <div className="fixed inset-0 pointer-events-none overflow-hidden" style={{ zIndex: -1 }}>
-      {[...Array(15)].map((_, i) => (
+      {particles.map((p, i) => (
         <div
           key={i}
           className="heart-particle"
           style={{
-            left: `${Math.random() * 100}%`,
-            '--duration': `${15 + Math.random() * 10}s`,
-            '--drift': `${(Math.random() - 0.5) * 200}`,
-            animationDelay: `${Math.random() * 10}s`,
-            fontSize: `${1 + Math.random() * 1.5}rem`,
+            left: p.left,
+            '--duration': p.duration,
+            '--drift': p.drift,
+            animationDelay: p.delay,
+            fontSize: p.size,
           } as any}
         >
-          {['❤️', '💖', '💗', '💕', '🌸'][i % 5]}
+          {p.emoji}
         </div>
       ))}
     </div>
   );
-};
+});
 
 export default function App() {
   const [photos, setPhotos] = useState<CapturedPhoto[]>([]);
@@ -264,6 +272,7 @@ export default function App() {
               stripCaption={stripCaption}
               setStripCaption={setStripCaption}
               background={selectedBg}
+              setBackground={setSelectedBg}
             />
           )}
         </main>
