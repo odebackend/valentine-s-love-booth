@@ -263,6 +263,7 @@ export default function App() {
               setStickerStyle={setStickerStyle}
               stripCaption={stripCaption}
               setStripCaption={setStripCaption}
+              background={selectedBg}
             />
           )}
         </main>

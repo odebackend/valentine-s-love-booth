@@ -18,6 +18,7 @@ interface PhotoStripProps {
   setStickerStyle: (style: 'single' | 'burst' | 'chaos' | 'border' | 'corners') => void;
   stripCaption: string;
   setStripCaption: (caption: string) => void;
+  background: any;
 }
 
 interface VisualEffect {
@@ -53,7 +54,8 @@ export const PhotoStrip: React.FC<PhotoStripProps> = ({
   stickerStyle,
   setStickerStyle,
   stripCaption,
-  setStripCaption
+  setStripCaption,
+  background
 }) => {
   const stripRef = useRef<HTMLDivElement>(null);
   const [isExporting, setIsExporting] = useState<'download' | 'share' | 'telegram' | null>(null);
@@ -343,8 +345,16 @@ export const PhotoStrip: React.FC<PhotoStripProps> = ({
       {/* The Photobooth Strip */}
       <div
         ref={stripRef}
-        className={`p-4 shadow-2xl rounded-sm max-w-[320px] w-full border-[10px] flex flex-col items-center transition-all duration-300 relative ${frame.className}`}
-        style={frame.imageUrl ? { backgroundImage: `url(${frame.imageUrl})` } : {}}
+        className={`p-4 shadow-2xl rounded-sm max-w-[320px] w-full border-[10px] flex flex-col items-center transition-all duration-300 relative ${frame.className} ${background.className}`}
+        style={{
+          ... (frame.imageUrl ? { backgroundImage: `url(${frame.imageUrl})` } : {}),
+          ... (background.imageUrl ? {
+            backgroundImage: frame.imageUrl ? `url(${frame.imageUrl}), url(${background.imageUrl})` : `url(${background.imageUrl})`,
+            backgroundSize: background.id.startsWith('bg-sticker') ? (frame.imageUrl ? 'auto, 60px 60px' : '60px 60px') : 'cover',
+            backgroundRepeat: background.id.startsWith('bg-sticker') ? 'repeat' : 'no-repeat',
+            backgroundAttachment: 'scroll'
+          } : {})
+        }}
       >
         <div className="flex flex-col space-y-4 w-full">
           {photos.map((photo, index) => (
