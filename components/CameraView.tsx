@@ -274,32 +274,6 @@ export const CameraView: React.FC<CameraViewProps> = ({ onCapture, isCapturing, 
         style={{ transform: 'scaleX(-1)', willChange: 'transform' }}
       />
 
-      {/* Background Preview Layer */}
-      {background.imageUrl && (
-        <div 
-          className="absolute inset-0 pointer-events-none opacity-20 z-0"
-          style={{
-            backgroundImage: `url(${background.imageUrl})`,
-            backgroundSize: background.id.startsWith('bg-sticker') ? '60px 60px' : 'cover',
-            backgroundRepeat: background.id.startsWith('bg-sticker') ? 'repeat' : 'no-repeat',
-            mixBlendMode: 'overlay'
-          }}
-        />
-      )}
-
-      {/* Frame Preview Layer */}
-      {frame.imageUrl && (
-        <div 
-          className="absolute inset-0 pointer-events-none opacity-30 z-1"
-          style={{
-            backgroundImage: `url(${frame.imageUrl})`,
-            backgroundSize: '60px 60px',
-            backgroundRepeat: 'repeat',
-            mixBlendMode: 'multiply'
-          }}
-        />
-      )}
-
       {/* Sticker Overlays on Camera */}
       <div className="absolute inset-0 pointer-events-none z-10">{selectedStickers.flatMap((sticker, sIdx) => {
           const STICKER_STYLES = [
