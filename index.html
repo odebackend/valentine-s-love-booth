@@ -193,6 +193,36 @@
       background: #fbcfe8;
       border-radius: 10px;
     }
+
+    /* Glassmorphism Classes */
+    .glass-card {
+      background: rgba(255, 255, 255, 0.7);
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
+      border: 1px solid rgba(255, 255, 255, 0.4);
+      box-shadow: 0 8px 32px 0 rgba(244, 114, 182, 0.15);
+    }
+
+    /* Floating Heart Particles */
+    .heart-particle {
+      position: fixed;
+      pointer-events: none;
+      z-index: -1;
+      font-size: 1.5rem;
+      animation: float-particle var(--duration) linear infinite;
+      opacity: 0.3;
+      color: #f472b6;
+    }
+
+    @keyframes float-particle {
+      0% {
+        transform: translateY(110vh) translateX(0) rotate(0deg);
+      }
+
+      100% {
+        transform: translateY(-10vh) translateX(calc(var(--drift) * 1px)) rotate(360deg);
+      }
+    }
   </style>
   <script type="importmap">
 {

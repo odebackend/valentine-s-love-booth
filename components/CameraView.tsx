@@ -7,9 +7,10 @@ interface CameraViewProps {
   isCapturing: boolean;
   countdown: number | null;
   selectedStickers: StickerOption[];
+  stickerStyle: 'single' | 'burst' | 'chaos' | 'border' | 'corners';
 }
 
-export const CameraView: React.FC<CameraViewProps> = ({ onCapture, isCapturing, countdown, selectedStickers }) => {
+export const CameraView: React.FC<CameraViewProps> = ({ onCapture, isCapturing, countdown, selectedStickers, stickerStyle }) => {
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [stream, setStream] = useState<MediaStream | null>(null);
@@ -126,32 +127,58 @@ export const CameraView: React.FC<CameraViewProps> = ({ onCapture, isCapturing, 
 
       {/* Sticker Overlays on Camera */}
       <div className="absolute inset-0 pointer-events-none">
-        {selectedStickers.map((sticker, index) => {
+        {selectedStickers.flatMap((sticker, sIdx) => {
           const STICKER_STYLES = [
-            { bottom: '5%', left: '5%' },   // Bottom Left
-            { top: '5%', right: '5%' },    // Top Right
-            { top: '5%', left: '5%' },     // Top Left
-            { bottom: '5%', right: '5%' }, // Bottom Right
-            { top: '5%', left: '42.5%' },  // Top Center
-            { top: '40%', left: '5%' },    // Mid Left
-            { top: '40%', right: '5%' },   // Mid Right
+            { bottom: '5%', left: '5%' }, { top: '5%', right: '5%' },
+            { top: '5%', left: '5%' }, { bottom: '5%', right: '5%' },
+            { top: '5%', left: '42.5%' }, { top: '40%', left: '5%' },
+            { top: '40%', right: '5%' },
           ];
-          const pos = STICKER_STYLES[index % STICKER_STYLES.length];
 
-          return (
-            <div
-              key={sticker.id}
-              className="absolute w-[15%] h-[15%] transition-all duration-300 animate-in zoom-in"
-              style={pos}
-            >
-              <img
-                src={sticker.url}
-                className="w-full h-full object-contain drop-shadow-md"
-                alt="Sticker"
-                crossOrigin="anonymous"
-              />
+          const BORDER_STYLES = [
+            { top: '2%', left: '2%' }, { top: '2%', left: '25%' }, { top: '2%', left: '50%' }, { top: '2%', left: '75%' }, { top: '2%', right: '2%' },
+            { bottom: '2%', left: '2%' }, { bottom: '2%', left: '25%' }, { bottom: '2%', left: '50%' }, { bottom: '2%', left: '75%' }, { bottom: '2%', right: '2%' },
+            { top: '25%', left: '2%' }, { top: '50%', left: '2%' }, { top: '75%', left: '2%' },
+            { top: '25%', right: '2%' }, { top: '50%', right: '2%' }, { top: '75%', right: '2%' },
+          ];
+
+          const CORNER_STYLES = [
+            { top: '3%', left: '3%' }, { top: '10%', left: '3%' }, { top: '3%', left: '10%' },
+            { top: '3%', right: '3%' }, { top: '10%', right: '3%' }, { top: '3%', right: '10%' },
+            { bottom: '3%', left: '3%' }, { bottom: '10%', left: '3%' }, { bottom: '3%', left: '10%' },
+            { bottom: '3%', right: '3%' }, { bottom: '10%', right: '3%' }, { bottom: '3%', right: '10%' },
+          ];
+
+          let configs: { style: React.CSSProperties; key: string }[] = [];
+
+          if (stickerStyle === 'burst') {
+            configs = STICKER_STYLES.map((pos, i) => ({ style: pos, key: `${sticker.id}-burst-${i}` }));
+          } else if (stickerStyle === 'border') {
+            configs = BORDER_STYLES.map((pos, i) => ({ style: { ...pos, transform: 'scale(0.7)' }, key: `${sticker.id}-border-${i}` }));
+          } else if (stickerStyle === 'corners') {
+            configs = CORNER_STYLES.map((pos, i) => ({ style: pos, key: `${sticker.id}-corners-${i}` }));
+          } else if (stickerStyle === 'chaos') {
+            for (let i = 0; i < 6; i++) {
+              const seed = (sIdx + 1) * (i + 1);
+              configs.push({
+                key: `${sticker.id}-chaos-${i}`,
+                style: {
+                  top: `${(seed * 17) % 80 + 5}%`,
+                  left: `${(seed * 23) % 80 + 5}%`,
+                  transform: `rotate(${(seed * 45) % 360}deg) scale(${(seed % 5) * 0.2 + 0.6})`,
+                  opacity: 0.9,
+                }
+              });
+            }
+          } else {
+            configs = [{ style: STICKER_STYLES[sIdx % STICKER_STYLES.length], key: `${sticker.id}-single` }];
+          }
+
+          return configs.map(cfg => (
+            <div key={cfg.key} className="absolute w-[15%] h-[15%] transition-all duration-500 animate-in zoom-in" style={cfg.style}>
+              <img src={sticker.url} className="w-full h-full object-contain drop-shadow-md hover:scale-110 transition-transform" alt="Sticker" crossOrigin="anonymous" />
             </div>
-          );
+          ));
         })}
       </div>
 

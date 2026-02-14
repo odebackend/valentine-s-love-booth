@@ -10,11 +10,11 @@ export const FRAMES: FrameOption[] = [
 ];
 
 export const BACKGROUNDS: BackgroundOption[] = [
-  { id: 'gradient', name: 'Romantic Glow', className: 'bg-gradient-romantic', previewColor: '#ff9a9e' },
-  { id: 'hearts-fall', name: 'Falling Hearts', className: 'bg-hearts-fall', previewColor: '#ff85a1' },
-  { id: 'love-pulse', name: 'Love Pulse', className: 'bg-love-pulse', previewColor: '#fecaca' },
-  { id: 'starlight', name: 'Midnight Love', className: 'bg-starlight', previewColor: '#1a0b2e' },
-  { id: 'bokeh', name: 'Soft Bokeh', className: 'bg-soft-bokeh', previewColor: '#fad0c4' },
+  { id: 'gradient', name: 'Romantic Glow', className: 'bg-gradient-romantic', previewColor: '#ff9a9e', icon: '✨' },
+  { id: 'hearts-fall', name: 'Falling Hearts', className: 'bg-hearts-fall', previewColor: '#ff85a1', icon: '💕' },
+  { id: 'love-pulse', name: 'Love Pulse', className: 'bg-love-pulse', previewColor: '#fecaca', icon: '💗' },
+  { id: 'starlight', name: 'Midnight Love', className: 'bg-starlight', previewColor: '#1a0b2e', icon: '🌟' },
+  { id: 'bokeh', name: 'Soft Bokeh', className: 'bg-soft-bokeh', previewColor: '#fad0c4', icon: '🌸' },
 ];
 
 // Automatically import all stickers from assets/stickers

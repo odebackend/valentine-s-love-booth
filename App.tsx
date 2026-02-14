@@ -10,6 +10,28 @@ import { CapturedPhoto, FrameOption, BackgroundOption, StickerOption } from './t
 const MAX_PHOTOS = 4;
 const INITIAL_COUNTDOWN = 3;
 
+const BackgroundParticles = () => {
+  return (
+    <div className="fixed inset-0 pointer-events-none overflow-hidden" style={{ zIndex: -1 }}>
+      {[...Array(15)].map((_, i) => (
+        <div
+          key={i}
+          className="heart-particle"
+          style={{
+            left: `${Math.random() * 100}%`,
+            '--duration': `${15 + Math.random() * 10}s`,
+            '--drift': `${(Math.random() - 0.5) * 200}`,
+            animationDelay: `${Math.random() * 10}s`,
+            fontSize: `${1 + Math.random() * 1.5}rem`,
+          } as any}
+        >
+          {['❤️', '💖', '💗', '💕', '🌸'][i % 5]}
+        </div>
+      ))}
+    </div>
+  );
+};
+
 export default function App() {
   const [photos, setPhotos] = useState<CapturedPhoto[]>([]);
   const [isCapturing, setIsCapturing] = useState(false);
@@ -18,6 +40,8 @@ export default function App() {
   const [hoveredFrame, setHoveredFrame] = useState<FrameOption | null>(null);
   const [selectedBg, setSelectedBg] = useState<BackgroundOption>(ALL_BACKGROUNDS[0]);
   const [selectedStickers, setSelectedStickers] = useState<StickerOption[]>([]);
+  const [stickerStyle, setStickerStyle] = useState<'single' | 'burst' | 'chaos' | 'border' | 'corners'>('single');
+  const [stripCaption, setStripCaption] = useState('Valentine 2026');
 
   const startPhotobooth = () => {
     setPhotos([]);
@@ -70,17 +94,15 @@ export default function App() {
 
   return (
     <div
-      className={`min-h-screen py-8 px-4 overflow-x-hidden transition-all duration-700 ${selectedBg.className}`}
-      style={selectedBg.imageUrl ? { backgroundImage: `url(${selectedBg.imageUrl})` } : {}}
+      className={`min-h-screen py-8 px-4 overflow-x-hidden transition-all duration-700 relative flex flex-col items-center justify-center ${selectedBg.className}`}
+      style={selectedBg.imageUrl ? {
+        backgroundImage: `url(${selectedBg.imageUrl})`,
+        backgroundSize: selectedBg.id.startsWith('bg-sticker') ? '80px 80px' : 'cover',
+        backgroundRepeat: selectedBg.id.startsWith('bg-sticker') ? 'repeat' : 'no-repeat',
+        backgroundAttachment: 'fixed'
+      } : {}}
     >
-      {/* Decorative Floating Hearts - only show on light backgrounds for contrast */}
-      {!isDarkBg && (
-        <>
-          <div className="fixed top-10 left-10 text-pink-300 animate-float opacity-40 pointer-events-none">{HEART_ICON}</div>
-          <div className="fixed bottom-20 right-10 text-pink-300 animate-float opacity-40 [animation-delay:1s] pointer-events-none">{HEART_ICON}</div>
-          <div className="fixed top-1/2 left-5 text-pink-200 animate-float opacity-30 [animation-delay:1.5s] pointer-events-none">{HEART_ICON}</div>
-        </>
-      )}
+      <BackgroundParticles />
 
       <div className="max-w-4xl mx-auto relative z-10">
         <header className="text-center mb-6 md:mb-10">
@@ -89,7 +111,7 @@ export default function App() {
           </h1>
           <p className={`font-bold text-[10px] sm:text-xs md:text-sm tracking-[0.2em] flex items-center justify-center gap-2 transition-colors duration-500 ${isDarkBg ? 'text-pink-200' : 'text-pink-400'}`}>
             <span>CAPTURE YOUR VALENTINE MEMORIES</span>
-            <span className="text-pink-300">{HEART_ICON}</span>
+            <span className="text-pink-300 animate-pulse">{HEART_ICON}</span>
           </p>
         </header>
 
@@ -101,27 +123,30 @@ export default function App() {
                 isCapturing={isCapturing}
                 countdown={countdown}
                 selectedStickers={selectedStickers}
+                stickerStyle={stickerStyle}
               />
 
               <div className="flex flex-col items-center gap-6 w-full max-w-2xl">
                 <div className="w-full grid grid-cols-1 md:grid-cols-3 gap-4 relative">
-                  {/* Background Selection */}
+                  {/* Atmosphere / Background Selection */}
                   {!isCapturing && (
-                    <div className="bg-white/90 backdrop-blur-sm p-4 sm:p-5 rounded-3xl shadow-lg flex flex-col items-center gap-3 border border-pink-100 h-fit">
-                      <h3 className="text-pink-500 font-bold text-[10px] uppercase tracking-widest">Background</h3>
-                      <div className="flex flex-wrap justify-center gap-2.5 max-h-40 overflow-y-auto p-1 custom-scrollbar">
+                    <div className="glass-card p-4 sm:p-5 rounded-3xl flex flex-col items-center gap-3 h-fit">
+                      <h3 className="text-pink-500 font-bold text-[10px] uppercase tracking-widest">Atmosphere</h3>
+                      <div className="flex flex-wrap justify-center gap-2 max-h-48 overflow-y-auto p-1 custom-scrollbar">
                         {ALL_BACKGROUNDS.map(bg => (
                           <button
                             key={bg.id}
                             onClick={() => setSelectedBg(bg)}
-                            className={`w-8 h-8 sm:w-10 sm:h-10 rounded-full border-2 transition-all hover:scale-110 active:scale-95 ${selectedBg.id === bg.id ? 'border-pink-500 scale-110 ring-2 ring-pink-100' : 'border-gray-200'
-                              }`}
-                            style={bg.imageUrl
-                              ? { backgroundImage: `url(${bg.imageUrl})`, backgroundSize: 'cover' }
-                              : { backgroundColor: bg.previewColor }
-                            }
+                            className={`w-9 h-9 sm:w-11 sm:h-11 rounded-2xl border-2 transition-all hover:scale-110 active:scale-95 flex items-center justify-center overflow-hidden shadow-sm ${selectedBg.id === bg.id ? 'border-pink-500 scale-110 ring-2 ring-pink-100' : 'border-white/50'}`}
                             title={bg.name}
-                          />
+                          >
+                            <div
+                              className={`w-full h-full ${bg.className} flex items-center justify-center`}
+                              style={bg.imageUrl ? { backgroundImage: `url(${bg.imageUrl})`, backgroundSize: 'contain', backgroundRepeat: 'no-repeat', backgroundPosition: 'center', backgroundColor: '#fff' } : {}}
+                            >
+                              {!bg.imageUrl && <span className="text-lg">{bg.icon}</span>}
+                            </div>
+                          </button>
                         ))}
                       </div>
                     </div>
@@ -129,8 +154,8 @@ export default function App() {
 
                   {/* Frame Selection */}
                   {!isCapturing && (
-                    <div className="bg-white/90 backdrop-blur-sm p-5 rounded-3xl shadow-lg flex flex-col items-center gap-3 border border-pink-100 relative group h-fit">
-                      <h3 className="text-pink-500 font-bold text-xs uppercase tracking-widest">Frame Style</h3>
+                    <div className="glass-card p-4 sm:p-5 rounded-3xl flex flex-col items-center gap-3 h-fit">
+                      <h3 className="text-pink-500 font-bold text-[10px] uppercase tracking-widest">Frame Style</h3>
                       <div className="flex flex-wrap justify-center gap-2.5 max-h-40 overflow-y-auto p-1 custom-scrollbar">
                         {ALL_FRAMES.map(f => (
                           <button
@@ -138,8 +163,7 @@ export default function App() {
                             onMouseEnter={() => setHoveredFrame(f)}
                             onMouseLeave={() => setHoveredFrame(null)}
                             onClick={() => setSelectedFrame(f)}
-                            className={`w-8 h-8 sm:w-10 sm:h-10 rounded-full border-2 transition-all hover:scale-110 active:scale-95 ${selectedFrame.id === f.id ? 'border-pink-500 scale-110 ring-2 ring-pink-100' : 'border-gray-200'
-                              }`}
+                            className={`w-8 h-8 sm:w-10 sm:h-10 rounded-full border-2 transition-all hover:scale-110 active:scale-95 overflow-hidden ${selectedFrame.id === f.id ? 'border-pink-500 scale-110 ring-2 ring-pink-100' : 'border-gray-200'}`}
                             style={f.imageUrl
                               ? { backgroundImage: `url(${f.imageUrl})`, backgroundSize: 'cover' }
                               : { backgroundColor: f.previewColor }
@@ -152,9 +176,29 @@ export default function App() {
                   )}
 
                   {/* Sticker Selection - ALWAYS SHOW in the same place */}
-                  <div className={`bg-white/90 backdrop-blur-sm p-4 sm:p-5 rounded-3xl shadow-lg flex flex-col items-center gap-3 border border-pink-100 h-fit ${isCapturing ? 'md:col-start-2' : ''}`}>
-                    <h3 className="text-pink-500 font-bold text-[10px] uppercase tracking-widest">Decorations</h3>
-                    <div className="flex flex-wrap justify-center gap-2.5">
+                  <div className={`glass-card p-4 sm:p-5 rounded-3xl flex flex-col items-center gap-3 h-fit ${isCapturing ? 'md:col-start-2' : ''}`}>
+                    <div className="flex flex-col items-center gap-1">
+                      <h3 className="text-pink-500 font-bold text-[10px] uppercase tracking-widest">Decorations</h3>
+                      {/* Sticker Density Toggle */}
+                      <div className="flex bg-pink-100/50 p-0.5 rounded-full mb-1 flex-wrap justify-center gap-1 max-w-[180px]">
+                        {[
+                          { id: 'single', label: 'Classic' },
+                          { id: 'burst', label: 'Burst' },
+                          { id: 'chaos', label: 'Chaos' },
+                          { id: 'border', label: 'Border' },
+                          { id: 'corners', label: 'Corners' }
+                        ].map(s => (
+                          <button
+                            key={s.id}
+                            onClick={() => setStickerStyle(s.id as any)}
+                            className={`px-2 py-0.5 rounded-full text-[7px] font-bold uppercase transition-all ${stickerStyle === s.id ? 'bg-pink-500 text-white shadow-sm' : 'text-pink-400 hover:bg-pink-100'}`}
+                          >
+                            {s.label}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                    <div className="flex flex-wrap justify-center gap-2.5 max-h-40 overflow-y-auto p-1 custom-scrollbar">
                       <button
                         onClick={() => setSelectedStickers([])}
                         className={`w-8 h-8 sm:w-10 sm:h-10 rounded-full border-2 transition-all hover:scale-110 active:scale-95 flex items-center justify-center ${selectedStickers.length === 0 ? 'border-pink-500 scale-110 ring-2 ring-pink-100' : 'border-gray-200'
@@ -215,6 +259,10 @@ export default function App() {
               onReset={reset}
               selectedStickers={selectedStickers}
               setSelectedStickers={setSelectedStickers}
+              stickerStyle={stickerStyle}
+              setStickerStyle={setStickerStyle}
+              stripCaption={stripCaption}
+              setStripCaption={setStripCaption}
             />
           )}
         </main>
