@@ -1,5 +1,5 @@
 import React, { useRef, useEffect, useState, useCallback } from 'react';
-import { CapturedPhoto, StickerOption } from '../types';
+import { CapturedPhoto, StickerOption, FrameOption, BackgroundOption } from '../types';
 import { audioService } from '../services/audioService';
 
 interface CameraViewProps {
@@ -8,48 +8,99 @@ interface CameraViewProps {
   countdown: number | null;
   selectedStickers: StickerOption[];
   stickerStyle: 'single' | 'burst' | 'chaos' | 'border' | 'corners';
+  frame: FrameOption;
+  background: BackgroundOption;
 }
 
-export const CameraView: React.FC<CameraViewProps> = ({ onCapture, isCapturing, countdown, selectedStickers, stickerStyle }) => {
+export const CameraView: React.FC<CameraViewProps> = ({ onCapture, isCapturing, countdown, selectedStickers, stickerStyle, frame, background }) => {
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [stream, setStream] = useState<MediaStream | null>(null);
 
-  // Pre-load stickers as images for canvas drawing
+  // Pre-load stickers, frame, and background images for canvas drawing
   const stickerImages = useRef<{ [url: string]: HTMLImageElement }>({});
+  const frameImage = useRef<HTMLImageElement | null>(null);
+  const backgroundImage = useRef<HTMLImageElement | null>(null);
+  const [imagesLoaded, setImagesLoaded] = useState(false);
 
+  // Preload all images efficiently
   useEffect(() => {
+    const loadPromises: Promise<void>[] = [];
+
+    // Load stickers
     selectedStickers.forEach(sticker => {
       if (!stickerImages.current[sticker.url]) {
         const img = new Image();
+        img.crossOrigin = 'anonymous';
+        const promise = new Promise<void>((resolve) => {
+          img.onload = () => resolve();
+          img.onerror = () => resolve(); // Continue even if fails
+        });
         img.src = sticker.url;
         stickerImages.current[sticker.url] = img;
+        loadPromises.push(promise);
       }
     });
-  }, [selectedStickers]);
+
+    // Load frame
+    if (frame.imageUrl) {
+      const img = new Image();
+      img.crossOrigin = 'anonymous';
+      const promise = new Promise<void>((resolve) => {
+        img.onload = () => resolve();
+        img.onerror = () => resolve();
+      });
+      img.src = frame.imageUrl;
+      frameImage.current = img;
+      loadPromises.push(promise);
+    } else {
+      frameImage.current = null;
+    }
+
+    // Load background
+    if (background.imageUrl) {
+      const img = new Image();
+      img.crossOrigin = 'anonymous';
+      const promise = new Promise<void>((resolve) => {
+        img.onload = () => resolve();
+        img.onerror = () => resolve();
+      });
+      img.src = background.imageUrl;
+      backgroundImage.current = img;
+      loadPromises.push(promise);
+    } else {
+      backgroundImage.current = null;
+    }
+
+    // Wait for all images to load
+    Promise.all(loadPromises).then(() => setImagesLoaded(true));
+  }, [selectedStickers, frame, background]);
 
   useEffect(() => {
     let mounted = true;
 
     async function setupCamera() {
       try {
-        // Flexible constraints for broad compatibility (ASUS, Mac, Mobile)
+        // Optimized constraints for smooth performance
         const mediaStream = await navigator.mediaDevices.getUserMedia({
           video: {
             facingMode: 'user',
-            width: { ideal: 1920, max: 4096 }, // Target 1080p, support up to 4K
-            height: { ideal: 1080, max: 2160 }
+            width: { ideal: 1280, max: 1920 }, // Balance quality and performance
+            height: { ideal: 720, max: 1080 },
+            frameRate: { ideal: 30, max: 30 } // Smooth 30fps
           },
           audio: false
         }).catch(() => {
           // Fallback to basic video if ideal fails
-          return navigator.mediaDevices.getUserMedia({ video: true, audio: false });
+          return navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user' }, audio: false });
         });
 
         if (mounted) {
           setStream(mediaStream);
           if (videoRef.current) {
             videoRef.current.srcObject = mediaStream;
+            // Ensure video plays smoothly
+            videoRef.current.play().catch(console.error);
           }
         } else {
           mediaStream.getTracks().forEach(track => track.stop());
@@ -82,7 +133,7 @@ export const CameraView: React.FC<CameraViewProps> = ({ onCapture, isCapturing, 
       audioService.playShutter();
       const video = videoRef.current;
       const canvas = canvasRef.current;
-      const context = canvas.getContext('2d');
+      const context = canvas.getContext('2d', { alpha: false, willReadFrequently: false });
       if (context) {
         // Use actual video dimensions for high quality
         canvas.width = video.videoWidth;
@@ -92,19 +143,116 @@ export const CameraView: React.FC<CameraViewProps> = ({ onCapture, isCapturing, 
         context.imageSmoothingEnabled = true;
         context.imageSmoothingQuality = 'high';
 
-        // Mirror the image
+        // Layer 1: Draw background
+        if (backgroundImage.current?.complete) {
+          if (background.id.startsWith('bg-sticker')) {
+            // Tile pattern for sticker backgrounds
+            const pattern = context.createPattern(backgroundImage.current, 'repeat');
+            if (pattern) {
+              context.fillStyle = pattern;
+              context.fillRect(0, 0, canvas.width, canvas.height);
+            }
+          } else {
+            // Cover for photo backgrounds
+            const scale = Math.max(canvas.width / backgroundImage.current.width, canvas.height / backgroundImage.current.height);
+            const x = (canvas.width - backgroundImage.current.width * scale) / 2;
+            const y = (canvas.height - backgroundImage.current.height * scale) / 2;
+            context.drawImage(backgroundImage.current, x, y, backgroundImage.current.width * scale, backgroundImage.current.height * scale);
+          }
+        }
+
+        // Layer 2: Draw the video (mirrored)
+        context.save();
         context.translate(canvas.width, 0);
         context.scale(-1, 1);
         context.drawImage(video, 0, 0, canvas.width, canvas.height);
+        context.restore();
 
-        // Restore scale for drawing stickers
-        context.setTransform(1, 0, 0, 1, 0, 0);
+        // Layer 3: Draw frame pattern with transparency
+        if (frameImage.current?.complete) {
+          const pattern = context.createPattern(frameImage.current, 'repeat');
+          if (pattern) {
+            context.globalAlpha = 0.3; // Semi-transparent overlay
+            context.fillStyle = pattern;
+            context.fillRect(0, 0, canvas.width, canvas.height);
+            context.globalAlpha = 1.0;
+          }
+        }
 
-        const dataUrl = canvas.toDataURL('image/png', 0.9);
+        // Layer 4: Draw stickers (optimized)
+        const stickerSize = canvas.width * 0.15;
+        
+        selectedStickers.forEach((sticker, sIdx) => {
+          const img = stickerImages.current[sticker.url];
+          if (!img?.complete) return;
+
+          const positions = getStickerPositions(sIdx, stickerStyle);
+          
+          positions.forEach((pos) => {
+            const size = pos.scale ? canvas.width * pos.scale : stickerSize;
+            let x = pos.left !== undefined ? canvas.width * pos.left : 
+                    pos.right !== undefined ? canvas.width * (1 - pos.right) - size : 
+                    canvas.width * 0.5 - size / 2;
+            
+            let y = pos.top !== undefined ? canvas.height * pos.top : 
+                    pos.bottom !== undefined ? canvas.height * (1 - pos.bottom) - size : 
+                    canvas.height * 0.5 - size / 2;
+
+            context.save();
+            context.translate(x + size / 2, y + size / 2);
+            if (pos.rotation) context.rotate((pos.rotation * Math.PI) / 180);
+            context.drawImage(img, -size / 2, -size / 2, size, size);
+            context.restore();
+          });
+        });
+
+        const dataUrl = canvas.toDataURL('image/jpeg', 0.92); // JPEG for better performance
         onCapture(dataUrl);
       }
     }
-  }, [onCapture]);
+  }, [onCapture, selectedStickers, stickerStyle, frame, background]);
+
+  // Helper function to get sticker positions (memoized logic)
+  const getStickerPositions = (sIdx: number, style: string) => {
+    const STICKER_STYLES = [
+      { bottom: 0.05, left: 0.05 }, { top: 0.05, right: 0.05 },
+      { top: 0.05, left: 0.05 }, { bottom: 0.05, right: 0.05 },
+      { top: 0.05, left: 0.425 }, { top: 0.40, left: 0.05 },
+      { top: 0.40, right: 0.05 },
+    ];
+
+    const BORDER_STYLES = [
+      { top: 0.02, left: 0.02 }, { top: 0.02, left: 0.25 }, { top: 0.02, left: 0.50 }, { top: 0.02, left: 0.75 }, { top: 0.02, right: 0.02 },
+      { bottom: 0.02, left: 0.02 }, { bottom: 0.02, left: 0.25 }, { bottom: 0.02, left: 0.50 }, { bottom: 0.02, left: 0.75 }, { bottom: 0.02, right: 0.02 },
+      { top: 0.25, left: 0.02 }, { top: 0.50, left: 0.02 }, { top: 0.75, left: 0.02 },
+      { top: 0.25, right: 0.02 }, { top: 0.50, right: 0.02 }, { top: 0.75, right: 0.02 },
+    ].map(p => ({ ...p, scale: 0.10 }));
+
+    const CORNER_STYLES = [
+      { top: 0.03, left: 0.03 }, { top: 0.10, left: 0.03 }, { top: 0.03, left: 0.10 },
+      { top: 0.03, right: 0.03 }, { top: 0.10, right: 0.03 }, { top: 0.03, right: 0.10 },
+      { bottom: 0.03, left: 0.03 }, { bottom: 0.10, left: 0.03 }, { bottom: 0.03, left: 0.10 },
+      { bottom: 0.03, right: 0.03 }, { bottom: 0.10, right: 0.03 }, { bottom: 0.03, right: 0.10 },
+    ];
+
+    if (style === 'burst') return STICKER_STYLES;
+    if (style === 'border') return BORDER_STYLES;
+    if (style === 'corners') return CORNER_STYLES;
+    if (style === 'chaos') {
+      const positions = [];
+      for (let i = 0; i < 6; i++) {
+        const seed = (sIdx + 1) * (i + 1);
+        positions.push({
+          top: ((seed * 17) % 80 + 5) / 100,
+          left: ((seed * 23) % 80 + 5) / 100,
+          rotation: (seed * 45) % 360,
+          scale: (seed % 5) * 0.02 + 0.08
+        });
+      }
+      return positions;
+    }
+    return [STICKER_STYLES[sIdx % STICKER_STYLES.length]];
+  };
 
   useEffect(() => {
     if (countdown !== null && countdown > 0) {
@@ -123,11 +271,37 @@ export const CameraView: React.FC<CameraViewProps> = ({ onCapture, isCapturing, 
         playsInline
         muted
         className="w-full h-full object-cover scale-x-[-1]"
+        style={{ transform: 'scaleX(-1)', willChange: 'transform' }}
       />
 
+      {/* Background Preview Layer */}
+      {background.imageUrl && (
+        <div 
+          className="absolute inset-0 pointer-events-none opacity-20 z-0"
+          style={{
+            backgroundImage: `url(${background.imageUrl})`,
+            backgroundSize: background.id.startsWith('bg-sticker') ? '60px 60px' : 'cover',
+            backgroundRepeat: background.id.startsWith('bg-sticker') ? 'repeat' : 'no-repeat',
+            mixBlendMode: 'overlay'
+          }}
+        />
+      )}
+
+      {/* Frame Preview Layer */}
+      {frame.imageUrl && (
+        <div 
+          className="absolute inset-0 pointer-events-none opacity-30 z-1"
+          style={{
+            backgroundImage: `url(${frame.imageUrl})`,
+            backgroundSize: '60px 60px',
+            backgroundRepeat: 'repeat',
+            mixBlendMode: 'multiply'
+          }}
+        />
+      )}
+
       {/* Sticker Overlays on Camera */}
-      <div className="absolute inset-0 pointer-events-none">
-        {selectedStickers.flatMap((sticker, sIdx) => {
+      <div className="absolute inset-0 pointer-events-none z-10">{selectedStickers.flatMap((sticker, sIdx) => {
           const STICKER_STYLES = [
             { bottom: '5%', left: '5%' }, { top: '5%', right: '5%' },
             { top: '5%', left: '5%' }, { bottom: '5%', right: '5%' },
@@ -175,8 +349,15 @@ export const CameraView: React.FC<CameraViewProps> = ({ onCapture, isCapturing, 
           }
 
           return configs.map(cfg => (
-            <div key={cfg.key} className="absolute w-[15%] h-[15%] transition-all duration-500 animate-in zoom-in" style={cfg.style}>
-              <img src={sticker.url} className="w-full h-full object-contain drop-shadow-md hover:scale-110 transition-transform" alt="Sticker" crossOrigin="anonymous" />
+            <div key={cfg.key} className="absolute w-[15%] h-[15%] transition-transform duration-300" style={cfg.style}>
+              <img 
+                src={sticker.url} 
+                className="w-full h-full object-contain drop-shadow-md" 
+                alt="Sticker" 
+                crossOrigin="anonymous"
+                loading="eager"
+                decoding="sync"
+              />
             </div>
           ));
         })}

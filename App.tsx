@@ -132,6 +132,8 @@ export default function App() {
                 countdown={countdown}
                 selectedStickers={selectedStickers}
                 stickerStyle={stickerStyle}
+                frame={selectedFrame}
+                background={selectedBg}
               />
 
               <div className="flex flex-col items-center gap-6 w-full max-w-2xl">
